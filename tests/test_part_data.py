@@ -45,3 +45,47 @@ def test_flags() -> None:
     assert "octal_psram" in p.effective_flags("GPIO36", "N8R8")
     assert "octal_psram" not in p.effective_flags("GPIO36", "N8R2")
     assert "vdd_spi_1v8" in p.effective_flags("GPIO48", "N16R16VA7")
+
+
+# --- pin descriptions (datasheet Table 3-1, verbatim) -----------------------------------------
+
+
+def test_every_wroom_pin_has_a_cited_verbatim_description() -> None:
+    from puffin.library import PartLibrary
+
+    part = PartLibrary().get("espressif/esp32-s3-wroom-1")
+    assert part is not None
+    assert all(pin.description for pin in part.pins.values())
+    assert part.pin_description_source is not None
+    assert "Table 3-1" in part.pin_description_source
+    assert part.pins["EN"].description == (
+        "High: on, enables the chip. Low: off, the chip powers off. "
+        "Note: Do not leave the EN pin floating."
+    )
+    assert part.pins["GPIO10"].description == (
+        "RTC_GPIO10, GPIO10, TOUCH10, ADC1_CH9, FSPICS0, FSPIIO4, SUBSPICS0"
+    )
+    assert part.pins["3V3"].description == "Power supply"
+    assert "Octal SPI PSRAM" in (part.pins["GPIO35"].description or "")
+    assert "1.8 V" in (part.pins["GPIO47"].description or "")
+
+
+def test_placeholder_imu_has_no_descriptions() -> None:
+    from puffin.library import PartLibrary
+
+    imu = PartLibrary().get("example/spi-imu")
+    assert imu is not None
+    assert all(pin.description is None for pin in imu.pins.values())
+    assert imu.pin_description_source is None
+
+
+def test_descriptions_without_a_source_are_rejected() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    from puffin.library.models import PartDefinition
+
+    with pytest.raises(ValidationError, match="pin_description_source"):
+        PartDefinition.model_validate(
+            {"id": "x/y", "kind": "mcu", "pins": {"A": {"description": "made up"}}}
+        )

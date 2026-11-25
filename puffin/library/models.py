@@ -31,6 +31,7 @@ class PartPin(_PartModel):
 
     numbers: list[int] = Field(default_factory=list)
     datasheet_name: str | None = None
+    description: str | None = None  # verbatim from the datasheet; see pin_description_source
     type: str | None = None
     rail: str | None = None
     functions: list[str] = Field(default_factory=list)
@@ -99,7 +100,14 @@ class PartDefinition(_PartModel):
     flag_policy: dict[str, FlagPolicy] = Field(default_factory=dict)
     docs: PartDocs = Field(default_factory=PartDocs)
     sources: list[str] = Field(default_factory=list)
+    pin_description_source: str | None = None  # where pin descriptions were copied from
     timing: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _descriptions_are_cited(self) -> PartDefinition:
+        if any(pin.description for pin in self.pins.values()) and not self.pin_description_source:
+            raise ValueError("pin descriptions need pin_description_source citing the datasheet")
+        return self
 
     def effective_flags(self, pin: str, variant: str | None) -> frozenset[str]:
         """Flags on `pin`. With no variant, assume every variant's restrictions."""
