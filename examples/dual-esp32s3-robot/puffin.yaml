@@ -1,0 +1,73 @@
+# Reduced dual-ESP32-S3 robot board: two firmware domains on one schematic.
+puffin: "0.1"
+project: robot-mainboard
+
+boards:
+  main:
+    kicad_schematic: hw/robot/robot.kicad_sch
+    firmware:
+      framework: esp-idf
+      target: esp32s3
+      mcu: U1
+      output: fw/main/main/include/puffin_pins.h
+  motor:
+    kicad_schematic: hw/robot/robot.kicad_sch
+    firmware:
+      framework: esp-idf
+      target: esp32s3
+      mcu: U2
+      output: fw/motor/main/include/puffin_pins.h
+
+components:
+  U1:
+    part: espressif/esp32-s3-wroom-1
+    board: main
+    variant: N16R8
+  U2:
+    part: espressif/esp32-s3-wroom-1
+    board: motor
+    variant: N8
+  U3:
+    part: example/spi-imu
+    board: main
+
+nets:
+  IMU_SCK: [U1.GPIO12, U3.SCK]
+  IMU_MOSI: [U1.GPIO11, U3.SDI]
+  IMU_MISO: [U1.GPIO13, U3.SDO]
+  IMU_CS: [U1.GPIO10, U3.CS]
+  # Inter-MCU link, crossed TX/RX.
+  LINK_MAIN_TX: [U1.GPIO17, U2.GPIO18]
+  LINK_MOTOR_TX: [U2.GPIO17, U1.GPIO18]
+  BOOT_MAIN: [U1.GPIO0]
+  3V3: [U1.3V3, U2.3V3, U3.VDD]
+  GND: [U1.GND, U2.GND, U3.GND]
+
+assignments:  # what each MCU pin is for
+  U1:
+    spi2:
+      sck: GPIO12
+      mosi: GPIO11
+      miso: GPIO13
+      cs.imu: GPIO10
+    uart1:
+      tx: GPIO17
+      rx: GPIO18
+    gpio:
+      io.boot_button: GPIO0
+  U2:
+    uart1:
+      tx: GPIO17
+      rx: GPIO18
+
+constraints:
+  - net: IMU_SCK
+    max_freq_hz: 10_000_000
+
+overrides:
+  - pin: U1.GPIO0
+    allow: strapping
+    note: boot button, intentional
+
+intent:  # free-text notes for humans and AI; never parsed for logic
+  U3: IMU for balance control; read at 400 Hz

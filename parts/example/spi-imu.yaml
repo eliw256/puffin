@@ -1,0 +1,15 @@
+# Generic placeholder IMU for examples and tests. It is not a real part.
+# Replace it with a datasheet-backed definition before using it in a design.
+id: example/spi-imu
+kind: sensor
+supply: {nominal_v: 3.3}
+sources:
+  - "Placeholder: no datasheet"
+pins:
+  SCK: {functions: [spi.sck], type: I}
+  SDI: {functions: [spi.mosi], type: I}
+  SDO: {functions: [spi.miso], type: O}
+  CS: {functions: [spi.cs], type: I}
+  VDD: {type: P}
+  GND: {type: P}
+timing: {}  # TODO(verify): placeholder part has no timing data

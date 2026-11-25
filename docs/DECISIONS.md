@@ -1,0 +1,21 @@
+# Decisions
+
+Resolutions of the open decisions in `PUFFIN_SPEC.md` §11, confirmed 2026-11-23.
+
+| § | Decision | Resolution |
+|---|---|---|
+| 11.1 | Stack | Python core. The M4 UI ships in a **Tauri** desktop shell. The core, CLI, and MCP server stay fully usable headless. |
+| 11.2 | Graph format | **YAML** (`puffin.yaml`). A DSL may later compile to the same graph. |
+| 11.3 | Firmware target after ESP-IDF | **Decide after M1.** Keep the generator interface target-agnostic. |
+| 11.4 | KiCad write-back (v1) | **Net labels plus symbol/pin changes.** |
+| 11.5 | License | **MIT**, as already committed. |
+
+## M0 modelling choices
+
+- A `boards` entry is one firmware domain with one MCU. Two MCUs on one PCB are two entries that
+  share a `kicad_schematic`. Nets are global, so inter-MCU links need no special syntax.
+- A component may declare a `variant`. With no variant, validation assumes the union of every
+  variant's restrictions, so an unknown module cannot silently use octal-PSRAM pins.
+- Flagged pins are errors until overridden, unless the pin is used for the function the flag
+  protects (for example `usb_serial_jtag` on GPIO19/20).
+- An edit is rejected only if it introduces a new error. Existing errors do not block fixes.
