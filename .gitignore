@@ -14,3 +14,4 @@ build/
 *-backups/
 *.kicad_prl
 *.bak
+.puffin/history.jsonl

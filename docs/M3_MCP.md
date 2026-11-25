@@ -1,13 +1,12 @@
 # M3: MCP server, design note
 
-Status: draft for review. No server code until this is approved.
+Status: approved 2026-11-25, with the resolutions in §9.
 
 Tool names and output shapes are an API that models learn, so this note fixes them exactly. The
 spec references are §6 (M3) and §8 (AI behavior contract).
 
-The prompt that asked for this note was cut off partway through default (c), at "Proposals record
-the". Everything from that point on (the rest of c, and d onward) is my own proposal. Each such
-item is marked **[proposed]**.
+Items first written as my own proposals (the review prompt was cut off partway through default c)
+are marked **[proposed]**; §9 records how each was resolved.
 
 ## 1. Server and transport (default a: accepted, with two additions)
 
@@ -58,8 +57,10 @@ item is marked **[proposed]**.
   |---|---|
   | `not-found` | unknown component, net, part, board, peripheral, signal or doc section; `where` names which |
   | `proposal-unknown` | no proposal with that id (never issued, already applied, or evicted) |
-  | `proposal-stale` | `puffin.yaml` (or for imports, the schematic) changed since the proposal |
+  | `stale-proposal` | `puffin.yaml` (or for imports, the schematic) changed since the proposal |
   | `project-unreadable` | `puffin.yaml` can't be loaded; the message is the `ProjectLoadError` text |
+  | `path-escape` | a part, doc or output path resolves outside the project or part library |
+  | `internal-error` | an unexpected exception; never a stack trace in the result |
   | `kicad-cli-failed` | export failed; the message is the `KiCadCliError` text |
 
 - **Determinism.** Every list is sorted, or in file or part order where that order means
@@ -132,11 +133,15 @@ and `[T]` an array.
 
 **`get_part`**
 - Input: `{part: str}`, for example `"espressif/esp32-s3-wroom-1"`.
-- Output: `{ok, part: <PartDefinition as JSON>, doc_sections: [section_id]}`.
+- Output: `{ok, part: <PartDefinition as JSON>, has_datasheet: bool, sources: [str],
+  doc_sections: [section_id]}`. `has_datasheet` is false when the part has no extracted docs
+  and no `docs.datasheet`, as for the placeholder `example/spi-imu`, so a model can say "no
+  datasheet" from data instead of guessing.
 
 **`search_docs`**
 - Input: `{query: str, part?: str, limit?: int = 8}`.
-- Output: `{ok, results: [{section_id, part, title, snippet, score}]}`.
+- Output: `{ok, results: [{part, doc, section_id, heading, snippet, score}]}`. `doc` is the doc's
+  path relative to its part library root, e.g. `espressif/docs/esp32-s3-wroom-1.md`.
 - **How it searches [proposed]:**
   - The corpus is every `docs/*.md` in the part library roots: project-local parts, then
     bundled. Each file splits into sections at `##` headings.
@@ -147,12 +152,12 @@ and `[T]` an array.
 
 **`read_doc_section`**
 - Input: `{section_id: str}`.
-- Output: `{ok, section_id, part, title, source, text, citation}`.
+- Output: `{ok, part, doc, section_id, heading, sources, text, citation}`.
 - `section_id` is `<vendor>/<doc>#<slug>`, for example
   `espressif/esp32-s3-wroom-1#strapping-pins-table-4-1`.
-- `source` is the datasheet named in the part's `sources`.
-- `citation` is the string the contract tells the model to cite, for example `"ESP32-S3-WROOM-1
-  datasheet v1.8, Strapping pins (Table 4-1)"`.
+- `sources` is the part's `sources` list (the datasheets the doc was extracted from).
+- `citation` is what the contract tells the model to cite: part id plus section id, for example
+  `"espressif/esp32-s3-wroom-1 #strapping-pins-table-4-1"`.
 
 **`check`**
 - Input: `{}`.
@@ -189,7 +194,7 @@ and `[T]` an array.
   and applying them.
 - Output: `{ok, applied: bool, changed_artifacts: ["puffin.yaml"], warnings: [Issue]}`.
 - On apply, the server checks that `puffin.yaml` still has `base_sha256`; otherwise
-  `proposal-stale`.
+  `stale-proposal`.
 - It then re-runs the batch through `Project.batch` rather than writing the cached bytes, so
   validation runs at apply time too, and saves atomically.
 - It does **not** regenerate. `generate` stays a separate, explicit step, matching the spec's
@@ -202,7 +207,7 @@ and `[T]` an array.
 - It's applied with `apply_edit`, so there's one apply path, and the contract rule "propose
   before apply" covers imports too.
 - The proposal also records each schematic's hash.
-  - `apply_edit` refuses with `proposal-stale` if the schematic changed in between.
+  - `apply_edit` refuses with `stale-proposal` if the schematic changed in between.
   - On success it records sync state, both hashes, exactly as the CLI does for a kicad-cli
     import.
 - An in-sync result still returns a proposal with zero ops. Applying it records the sync, so
@@ -283,9 +288,10 @@ Prompts are optional in most clients, so the contract is *also* sent as the serv
 > 3. Always show the engineer the `propose_edit` diff, and get their go-ahead, before
 >    `apply_edit`.
 > 4. Use `legal_pins` and `query_pins` for pin choices. Don't infer pin functions yourself.
-> 5. Cite a doc section (`read_doc_section` citation) for any electrical claim: voltage, timing,
->    pin function. If the docs don't say, say so. A constraint in `puffin.yaml` is the
->    engineer's design limit, not a datasheet fact; say which one you're quoting.
+> 5. Never claim an electrical fact (voltage, timing, pin function) without a doc citation
+>    (part id + section id from `read_doc_section`) or project data (a tool result). When the
+>    docs don't say, say "the docs don't say". A constraint in `puffin.yaml` is the engineer's
+>    design limit, not a datasheet fact; say which one you're quoting.
 > 6. Flagged pins need an override with a note, recorded with the engineer's agreement.
 >    Never add one silently.
 > 7. KiCad decides components and nets. Make connectivity changes in KiCad, then
@@ -307,19 +313,37 @@ Prompts are optional in most clients, so the contract is *also* sent as the serv
 - **Live check:** a short manual run with Claude Code connected via `claude mcp add`. I'll
   record the transcript summary, but it isn't a CI test.
 
-## 9. Open questions for you
+## 9. Resolutions (review, 2026-11-25)
 
-1. **The acceptance question can't be answered from docs today.** "What's the IMU's max SPI
-   clock?" fails because `example/spi-imu` is a placeholder: no datasheet, empty `timing`, no
-   extracted docs. As things stand, the correct answer is "the docs don't say; the design
-   constraint is 10 MHz". Options:
-   - **(a)** Replace it with a real IMU part with an extracted doc. That needs a datasheet: you
-     pick the part, and I extract and cite it the same way as the ESP32-S3.
-   - **(b)** Accept "docs don't say, constraint is 10 MHz" as the correct acceptance answer.
-
-   I recommend (a). The spec's acceptance means the docs path, and nothing tests citations
-   until a real part exists.
-2. `generate` writes without a proposal (§3, Write). Agree?
-3. No `netlist` parameter on the MCP import (§3, `propose_import_kicad`). Agree?
-4. The rest of your default (c) and anything after it didn't arrive. Paste it, and I'll fold it
-   in where it differs from the **[proposed]** items.
+1. **Stale proposals:** the code is `stale-proposal`; the model must re-propose. Proposals hash the
+   project file's content and expire on server restart. Imports use the same propose/apply flow.
+   No tool writes arbitrary text or edits generated files (`generate` writes only through the
+   generator and writer guards).
+2. **External edits:** the server reloads `puffin.yaml` when it changes on disk; every response
+   reflects the current file.
+3. **Outputs:** structured JSON; issues via `Issue.to_dict` with stable codes; errors are tool
+   results with a code and hint, never stack traces (an unexpected exception becomes
+   `internal-error` with the exception type and message, logged in full to stderr).
+4. **Docs:** keyword search only, results carry part id, doc path, section id, heading, snippet;
+   citations are part id + section id.
+5. **Confinement:** every path resolves inside the project directory or a part library root;
+   anything else is refused with `path-escape`. This covers doc and part lookups (ids such as
+   `../../etc/passwd` or symlinks out of a root), generated outputs, and schematics.
+6. **History:** every applied proposal appends one line to `.puffin/history.jsonl`:
+   `{"time": ISO-8601 UTC, "tool": "apply_edit", "proposal_id", "kind": "edit"|"import", "ops",
+   "summary", "sha256": resulting puffin.yaml hash}`. **Recommendation: do not commit it**
+   (gitignore it). Git already records every change to `puffin.yaml` with author and time; the
+   history file's value is the *local* trail of what the AI did between commits. Committed, an
+   append-only file conflicts on every merge of two branches that both applied edits, and its
+   timestamps make otherwise identical work differ. `state.json` is different: it must be
+   committed because it describes the checked-in schematic. If you want a durable record of AI
+   edits, a commit-message trailer per applied proposal is the better vehicle; that is out of
+   scope for M3.
+7. **Prompts:** the §7 contract ships as the `puffin-contract` prompt and as `instructions`,
+   including "never claim an electrical fact without a doc citation or project data; say the
+   docs don't say when they don't".
+8. **IMU acceptance:** the placeholder stays. The expected answer is pins from the project,
+   10 MHz from the project constraint, and an explicit "the IMU part has no datasheet
+   (placeholder)". `get_part` exposes `has_datasheet: false` so this comes from data.
+9. **Accepted as proposed:** `generate` without a proposal; no `netlist` parameter over MCP;
+   `generated` previews in `propose_edit`; deterministic proposal ids.
