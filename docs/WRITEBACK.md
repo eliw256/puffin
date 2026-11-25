@@ -1,6 +1,6 @@
 # Scoped KiCad write-back, design note
 
-Status: draft for review. No write-back code until this is approved.
+Status: approved 2026-11-25, with the resolutions at the end.
 
 **Goal:** a pin move done in Puffin (`move_pin` on a KiCad-managed net) can also be applied to the
 `.kicad_sch`, so the round trip doesn't need hand-rewiring. KiCad stays the authority for
@@ -191,14 +191,19 @@ write-back on a fixture copy, then runs `check` (no drift) and a real `puffin im
   Then `writeback restore` brings back the originals.
 - Tests that run kicad-cli are skipped when it's missing, but the CI notes say how many.
 
-## Open questions
+## Resolutions (review, 2026-11-25)
 
-1. Is the shape B widening (label on a stub) OK? Without it, write-back can't reproduce your own
-   move.
-2. Is it OK to support opposite-side moves but refuse 90° moves and mirrored symbols in v1?
-3. Should write-back be opt-in (`writeback: true`), rather than automatic whenever it's
-   possible?
-4. CLI surface: `puffin move-pin …`, plus `puffin writeback confirm|restore`?
-5. Backup confirmation: delete only on `confirm`, with a `check` warning until then. Or would you
-   rather have the backup disappear on the next successful `puffin import kicad`, which proves
-   KiCad read the file back?
+1. Shape B (label on a stub): accepted.
+2. Opposite-side moves: accepted. 90° moves and mirrored instances: refused in v1.
+3. Opt-in per proposal (`writeback: true`); the `kicad-overwrite` hint offers write-back when the
+   change qualifies.
+4. CLI surface approved: `puffin move-pin`, `puffin writeback confirm|restore`.
+5. The backup is deleted only by `puffin writeback confirm`. A later import does not confirm:
+   kicad-cli proves connectivity, but only the engineer can judge layout (label overlaps, a stub
+   landing on text). `writeback-unconfirmed` stays until confirm.
+6. **Changed: write-backs stack on one checkpoint.** "Only one unconfirmed write-back" is
+   dropped. The first write-back after a confirm saves a *checkpoint*: the last confirmed
+   schematic(s), `puffin.yaml` and `state.json`, in `.puffin/backup/`. Further write-backs stack
+   on top without new backups. `confirm` accepts every pending write-back and deletes the
+   checkpoint; `restore` returns schematic(s), YAML and state to the checkpoint, undoing all of
+   them. The warning says how many are pending. This replaces the per-file backup naming in d.
