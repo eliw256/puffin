@@ -8,9 +8,9 @@ from pathlib import Path
 from puffin.core import Issue, Project, Severity
 from puffin.kicad import read_netlist
 from puffin.kicad.changes import ChangeSet, build_changes
-from tests.conftest import EXAMPLE
+from tests.conftest import PROJECT
 
-FIXTURE_TEXT = (EXAMPLE.parent / "hw" / "robot" / "robot.net").read_text(encoding="utf-8")
+FIXTURE_TEXT = (PROJECT.parent / "hw" / "robot" / "robot.net").read_text(encoding="utf-8")
 SCHEMATIC = "hw/robot/robot.kicad_sch"
 
 

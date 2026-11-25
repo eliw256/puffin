@@ -14,4 +14,6 @@ build/
 *-backups/
 *.kicad_prl
 *.bak
-.puffin/history.jsonl
+**/.puffin/history.jsonl
+examples/*/fw/
+_autosave-*
