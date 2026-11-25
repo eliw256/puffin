@@ -268,7 +268,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "IMU_Placeholder_1"
+		(symbol "Placeholder:IMU_Placeholder"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -315,7 +315,34 @@
 					(hide yes)
 				)
 			)
-			(symbol "IMU_Placeholder_1_0_1"
+			(property "Puffin_Part" "example/spi-imu"
+				(at 8.128 -16.764 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Puffin_Board" "main"
+				(at 8.382 -18.796 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Puffin_Variant" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "IMU_Placeholder_0_1"
 				(rectangle
 					(start 2.54 0)
 					(end 13.97 -15.24)
@@ -328,7 +355,7 @@
 					)
 				)
 			)
-			(symbol "IMU_Placeholder_1_1_1"
+			(symbol "IMU_Placeholder_1_1"
 				(text "Placeholder IMU"
 					(at 8.636 1.778 0)
 					(effects
@@ -3205,89 +3232,6 @@
 		)
 	)
 	(symbol
-		(lib_name "IMU_Placeholder_1")
-		(lib_id "Placeholder:IMU_Placeholder")
-		(at 240.03 77.47 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "217f8cd0-e7e1-48c8-ab06-f78bd3f5de91")
-		(property "Reference" "U3"
-			(at 257.81 83.0551 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "~"
-			(at 257.81 84.9602 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 240.03 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 240.03 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 240.03 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "3"
-			(uuid "2c92ae77-fa4c-4983-851f-af44a1733374")
-		)
-		(pin "4"
-			(uuid "c8d68245-4019-44cd-8da3-c58f09aa9e90")
-		)
-		(pin "2"
-			(uuid "24e95c97-200c-42cd-86d2-efe4781eeb09")
-		)
-		(pin "1"
-			(uuid "94af1dff-f01c-4fe2-a515-d585d288fe0c")
-		)
-		(pin "5"
-			(uuid "02c7e36e-e801-451e-8fb9-a1a3ea6c237f")
-		)
-		(pin "6"
-			(uuid "752557fe-5c3d-413e-a49a-02b8758a7887")
-		)
-		(instances
-			(project ""
-				(path "/4026db2b-26af-4aa1-adfe-335909179933"
-					(reference "U3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 38.1 116.84 0)
 		(unit 1)
@@ -3558,6 +3502,115 @@
 			(project ""
 				(path "/4026db2b-26af-4aa1-adfe-335909179933"
 					(reference "#PWR04")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Placeholder:IMU_Placeholder")
+		(at 240.03 77.47 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "686cbbd0-92ac-4856-96e3-204206e4f0b1")
+		(property "Reference" "U3"
+			(at 257.81 83.0551 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "~"
+			(at 257.81 84.9602 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 240.03 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 240.03 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 240.03 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Puffin_Part" "example/spi-imu"
+			(at 248.158 94.234 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Puffin_Board" "main"
+			(at 248.412 96.266 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Puffin_Variant" ""
+			(at 240.03 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "eb5a4cd6-4082-4a77-855a-a46384197745")
+		)
+		(pin "3"
+			(uuid "34f3fc4e-8f5d-4946-9049-a8973b463cbd")
+		)
+		(pin "6"
+			(uuid "67cd5f58-356f-47b1-970a-f5cae7919696")
+		)
+		(pin "2"
+			(uuid "444a8ac2-b5d0-4085-aae0-b4a22c61d632")
+		)
+		(pin "4"
+			(uuid "86a67bb5-1a52-48bc-bff0-0f3fc8e4e94a")
+		)
+		(pin "5"
+			(uuid "ef0b3182-48d1-4edc-b26c-ba3c5770d2a5")
+		)
+		(instances
+			(project ""
+				(path "/4026db2b-26af-4aa1-adfe-335909179933"
+					(reference "U3")
 					(unit 1)
 				)
 			)
