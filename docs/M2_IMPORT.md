@@ -42,7 +42,8 @@ silently bind U3 to the wrong symbol. Proposal:
 - A symbol matched only by reference designator is still managed, but gives a warning asking
   for a `Puffin_Part` field. Pin mapping (c) fails loudly if the symbol is the wrong part.
 - New managed components take their board from `Puffin_Board`. If it's missing, that's an error.
-  An optional `Puffin_Variant` field sets the variant.
+  An optional `Puffin_Variant` field sets the variant. An empty field counts as absent, and an
+  absent `Puffin_Variant` (or `Puffin_Board`) on an existing component keeps the graph's value.
 - The change set lists how many unmanaged symbols were excluded, grouped by library part (for
   example "Device:R ×6").
 
@@ -134,7 +135,10 @@ cheap, needs no KiCad, and gives a warning, never an error.
   pins bridges two nets that each have at least one managed endpoint, naming the symbol, its
   library part, and both nets. For example: `IMU_SCK is split by R5 (Device:R); the far side
   imports as AUTO(U3.SCK)`. If a constraint is on one of the halves, the warning says which half
-  it applies to. "Connected" excludes `unconnected-(…)` pins.
+  it applies to. "Connected" excludes `unconnected-(…)` pins. *Refined in Step 4:* a bridge is
+  skipped when either net is a power rail (it has a `power_in` or `power_out` pin in the
+  netlist). Without this, every pull-up, EN RC part, button and decoupling cap in the example
+  schematic (R1–R3, C1–C4, SW1) would warn.
 - **Ownership by schematic.** A graph component belongs to schematic S if its board's
   `kicad_schematic` is S. Only those components can be removed by importing S. A reference
   designator in S that belongs to a board with a different schematic is an error.
@@ -148,6 +152,9 @@ cheap, needs no KiCad, and gives a warning, never an error.
 - **Example project, Step 1:** the schematic's power nets will probably be named differently
   (`+3V3` or `VCC_3V3` rather than `3V3`), and buttons and resistors become unmanaged. I'll align
   `puffin.yaml` to the schematic and show you the diff before committing.
+
+- **Endpoint order:** when a pin moves, the new pin takes the old one's place in the net's list,
+  so the YAML diff is one token. Other additions are appended, sorted.
 
 ## Resolutions
 
