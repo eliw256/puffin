@@ -1882,6 +1882,10 @@
 		(uuid "0b8b98ce-3b72-448a-a0da-f7aa63008f0a")
 	)
 	(no_connect
+		(at 49.53 100.33)
+		(uuid "0bdaed26-f97c-4ecc-a344-e0a1e67e2e15")
+	)
+	(no_connect
 		(at 134.62 110.49)
 		(uuid "0dd9ac9a-2e51-4441-bf44-3ae75f808092")
 	)
@@ -2108,10 +2112,6 @@
 	(no_connect
 		(at 80.01 102.87)
 		(uuid "f36dec8e-99cf-469c-aacf-c07e485c9097")
-	)
-	(no_connect
-		(at 49.53 110.49)
-		(uuid "fea329aa-2df3-4219-ae9c-69cc7b670208")
 	)
 	(no_connect
 		(at 80.01 80.01)
@@ -2469,16 +2469,6 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 100.33) (xy 49.53 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c824ab9d-a22f-4a20-8dd3-81f8ae5720cb")
-	)
-	(wire
-		(pts
 			(xy 184.15 96.52) (xy 184.15 123.19)
 		)
 		(stroke
@@ -2506,6 +2496,16 @@
 			(type default)
 		)
 		(uuid "d260cd68-89a0-4fde-91b6-bf45a914ac3c")
+	)
+	(wire
+		(pts
+			(xy 48.26 110.49) (xy 49.53 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d2a78335-47ea-42bd-9a8b-ef02a381e08c")
 	)
 	(wire
 		(pts
@@ -2618,7 +2618,7 @@
 		(uuid "fed97b16-2efc-462b-a561-63e62736710c")
 	)
 	(label "IMU_CS"
-		(at 48.26 100.33 180)
+		(at 48.26 110.49 180)
 		(effects
 			(font
 				(size 1.27 1.27)

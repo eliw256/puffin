@@ -35,7 +35,7 @@ nets:
   IMU_SCK: [U1.GPIO12, U3.SCK]
   IMU_MOSI: [U1.GPIO11, U3.SDI]
   IMU_MISO: [U1.GPIO13, U3.SDO]
-  IMU_CS: [U1.GPIO10, U3.CS]
+  IMU_CS: [U1.GPIO14, U3.CS]
   # Inter-MCU link, crossed TX/RX.
   LINK_MAIN_TX: [U1.GPIO17, U2.GPIO18]
   LINK_MOTOR_TX: [U2.GPIO17, U1.GPIO18]
@@ -52,7 +52,7 @@ assignments:  # what each MCU pin is for
       sck: GPIO12
       mosi: GPIO11
       miso: GPIO13
-      cs.imu: GPIO10
+      cs.imu: GPIO14
     uart1:
       tx: GPIO17
       rx: GPIO18
