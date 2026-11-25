@@ -1,0 +1,10 @@
+# Fictional MCU whose pins are not named GPIOn, for generator tests only.
+id: local/pa-mcu
+kind: mcu
+sources:
+  - "Test fixture: no datasheet"
+pins:
+  PA0: {functions: [gpio], type: I/O/T}
+  VDD: {type: P}
+peripherals:
+  gpio: {signals: [io], routable: gpio_matrix}
