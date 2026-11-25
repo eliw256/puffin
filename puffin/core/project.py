@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import copy
-import os
-import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -15,6 +13,7 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.error import YAMLError
 
 from puffin.core import yamlio
+from puffin.core.fsio import atomic_write
 from puffin.core.issues import Issue, Severity
 from puffin.core.models import ProjectModel, split_endpoint
 from puffin.core.validate import validate
@@ -175,20 +174,9 @@ class Project:
         """Write atomically. Returns False if the target already has these bytes."""
         target = Path(path) if path is not None else self.path
         data = self.dumps()
-        if target.is_file() and target.read_bytes() == data:
-            changed = False
-        else:
-            descriptor, temp = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.")
-            try:
-                with os.fdopen(descriptor, "wb") as handle:
-                    handle.write(data)
-                if target.exists():
-                    os.chmod(temp, target.stat().st_mode)
-                os.replace(temp, target)
-            except BaseException:
-                Path(temp).unlink(missing_ok=True)
-                raise
-            changed = True
+        changed = not (target.is_file() and target.read_bytes() == data)
+        if changed:
+            atomic_write(target, data)
         if target == self.path:
             self._source = data
             self._dirty = False

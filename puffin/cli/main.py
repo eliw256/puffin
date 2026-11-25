@@ -1,4 +1,4 @@
-"""CLI entry point. Exit codes: 0 no errors, 1 validation errors, 2 project unreadable."""
+"""CLI entry point. Exit codes: 0 success, 1 errors or stale output, 2 project unreadable."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from puffin import __version__
+from puffin.cli import gen
 from puffin.core import Issue, Project, ProjectLoadError, ProjectModel, Severity
 from puffin.core.models import split_endpoint
 
@@ -117,6 +118,8 @@ def build_parser() -> argparse.ArgumentParser:
     show.add_argument("--board", help="limit output to one board")
     show.add_argument("--json", action="store_true", help="machine-readable output")
     show.set_defaults(func=cmd_show)
+
+    gen.add_parser(commands)
     return parser
 
 
