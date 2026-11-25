@@ -1,6 +1,7 @@
 # Scoped KiCad write-back, design note
 
-Status: approved 2026-11-25, with the resolutions at the end.
+Status: implemented 2026-11-25 (`puffin/kicad/schematic.py`, `writeback.py`, `checkpoint.py`),
+with the resolutions at the end and the as-built notes below.
 
 **Goal:** a pin move done in Puffin (`move_pin` on a KiCad-managed net) can also be applied to the
 `.kicad_sch`, so the round trip doesn't need hand-rewiring. KiCad stays the authority for
@@ -207,3 +208,20 @@ write-back on a fixture copy, then runs `check` (no drift) and a real `puffin im
    on top without new backups. `confirm` accepts every pending write-back and deletes the
    checkpoint; `restore` returns schematic(s), YAML and state to the checkpoint, undoing all of
    them. The warning says how many are pending. This replaces the per-file backup naming in d.
+
+## As built
+
+- **Geometry** is checked on the fixture's real symbols: all 112 netlist pins land on a wire end,
+  label, pin or no-connect, every unconnected pin on a no-connect marker, and the rotated power
+  symbols (90° and 270°) on their wires. The fixture has no 180° instance; the rotation code is
+  one formula for all four.
+- **Verification is two-layered**, and each layer has a test that only it catches: the full
+  netlist comparison (every part, managed or not; a tampered export that drops C4 from GND
+  must fail) and the graph check (`build_changes` in sync).
+- **The proposal is refused, not downgraded,** when `writeback: true` was asked for and cannot
+  apply: `ok: false` with `writeback-unavailable` and the reason, and no proposal id. The model
+  then proposes without write-back if the engineer wants the graph-only edit.
+- **Checkpoint files** live in `.puffin/backup/` (gitignored) with a `checkpoint.json` manifest
+  listing each saved file and the pending count. `restore` also removes files that did not
+  exist at the checkpoint (a `state.json` created by the first write-back). The history log is
+  not rolled back; it records what happened.

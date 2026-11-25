@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from puffin import __version__
-from puffin.cli import gen, importer
+from puffin.cli import edit, gen, importer
 from puffin.core import Issue, Project, ProjectLoadError, Severity, sort_issues
 from puffin.core.views import board_view
 from puffin.generators import check_generation
@@ -111,6 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     gen.add_parser(commands)
     importer.add_parser(commands)
+    edit.add_parsers(commands)
 
     serve = commands.add_parser("mcp", help="serve the project to an AI model over MCP (stdio)")
     serve.add_argument("path", nargs="?", default=".", help="puffin.yaml or its directory")

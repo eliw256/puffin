@@ -15,16 +15,18 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from puffin.core import Issue, Op, Project, ProjectLoadError, Severity, sort_issues
+from puffin.core import EditResult, Issue, Op, Project, ProjectLoadError, Severity, sort_issues
+from puffin.core.fsio import atomic_write
 from puffin.core.models import split_endpoint
-from puffin.core.scope import schematics
+from puffin.core.scope import KICAD_OVERWRITE, schematics
 from puffin.core.views import board_view
 from puffin.generators import check_generation, generate
 from puffin.generators.writer import apply_writes, plan_writes
-from puffin.kicad import NetlistError, read_netlist
+from puffin.kicad import NetlistError, checkpoint, read_netlist
 from puffin.kicad.changes import build_changes
 from puffin.kicad.export import KiCadCliError, export_netlist
 from puffin.kicad.state import drift_issues, record_sync, schematic_hash
+from puffin.kicad.writeback import WritebackPlan, lock_file, plan_writeback
 from puffin.library import PartDefinition, PartLoadError
 from puffin.mcp.docs import DocIndex, PathEscape, inside
 
@@ -41,6 +43,7 @@ MCP_CODES: dict[str, Severity] = {
     "project-unreadable": Severity.ERROR,
     "proposal-unknown": Severity.ERROR,
     "stale-proposal": Severity.ERROR,
+    "writeback-unavailable": Severity.ERROR,
 }
 
 
@@ -68,6 +71,7 @@ class Proposal:
     base_sha256: str
     summary: list[str]
     schematic_hashes: dict[str, str | None] = field(default_factory=dict)
+    writeback: list[WritebackPlan] = field(default_factory=list)
 
 
 class PuffinService:
@@ -410,7 +414,7 @@ class PuffinService:
                             ),
                         }
                     )
-        return {"result": result, "diff": diff, "generated": generated}
+        return {"result": result, "diff": diff, "generated": generated, "model": clone.model}
 
     def _register(self, proposal: Proposal) -> None:
         self.proposals.pop(proposal.proposal_id, None)
@@ -423,25 +427,90 @@ class PuffinService:
         canonical = json.dumps([kind, base, ops, extra], sort_keys=True)
         return "p_" + sha256(canonical.encode())[:12]
 
-    def propose_edit(self, ops: list[dict[str, Any]]) -> dict[str, Any]:
+    def propose_edit(self, ops: list[dict[str, Any]], writeback: bool = False) -> dict[str, Any]:
+        """Dry-run `ops`. With `writeback`, also plan and verify the schematic edit."""
         project = self.project()
         base = sha256(project.dumps())
         preview = self._preview(project, ops)
         result = preview["result"]
         summary = [Op.from_dict(op).label if "op" in op else "invalid op" for op in ops]
-        proposal_id = None
-        if result.ok:
-            proposal_id = self._proposal_id("edit", base, ops)
-            self._register(Proposal(proposal_id, "edit", ops, base, summary))
-        return {
+        warnings = list(result.warnings)
+        response: dict[str, Any] = {
             "ok": result.ok,
-            "proposal_id": proposal_id,
+            "proposal_id": None,
             "summary": summary,
             "diff": preview["diff"],
             "introduced_errors": [] if result.ok else issues_json(result.errors),
-            "warnings": issues_json(result.warnings),
+            "warnings": [],
             "generated": preview["generated"],
         }
+        overwrite = [w for w in warnings if w.code == KICAD_OVERWRITE]
+        plans: list[WritebackPlan] = []
+        if result.ok and (writeback or overwrite):
+            parsed = [Op.from_dict(op) for op in ops]
+            plans = plan_writeback(
+                self.root, project.model, preview["model"], parsed, project.library,
+                verify_with=export_netlist if writeback else None,
+            )  # fmt: skip
+            if not writeback:
+                warnings = [self._offer_writeback(w, plans) for w in warnings]
+        if writeback and result.ok:
+            response["writeback"] = [plan.to_dict() for plan in plans]
+            unavailable = [plan for plan in plans if not plan.available]
+            if not plans:
+                unavailable_reason = "this proposal changes no KiCad-managed net"
+            else:
+                unavailable_reason = "; ".join(f"{p.schematic}: {p.reason}" for p in unavailable)
+            if not plans or unavailable:
+                response["ok"] = False
+                response["errors"] = [
+                    Issue(MCP_CODES["writeback-unavailable"], "writeback-unavailable",
+                          "writeback", unavailable_reason,
+                          "propose without writeback, or make the change in KiCad").to_dict()
+                ]  # fmt: skip
+                response["warnings"] = issues_json(warnings)
+                return response
+            warnings = [w for w in warnings if w.code != KICAD_OVERWRITE] + [
+                Issue(
+                    Severity.WARNING,
+                    "kicad-writeback",
+                    f"kicad_schematic {plan.schematic}",
+                    "applying also writes "
+                    + plan.schematic
+                    + ": "
+                    + "; ".join(plan.edits)
+                    + " (verified with kicad-cli)",
+                    "review it in KiCad afterwards, then run `puffin writeback confirm`",
+                )
+                for plan in plans
+            ]
+        response["warnings"] = issues_json(warnings)
+        if result.ok:
+            extra = json.dumps({"writeback": writeback, "sch": [p.original_sha256 for p in plans]})
+            kind = "edit+writeback" if writeback else "edit"
+            proposal_id = self._proposal_id(kind, base, ops, extra)
+            self._register(Proposal(proposal_id, kind, ops, base, summary,
+                                    writeback=plans if writeback else []))  # fmt: skip
+            response["proposal_id"] = proposal_id
+        return response
+
+    @staticmethod
+    def _offer_writeback(warning: Issue, plans: list[WritebackPlan]) -> Issue:
+        """Rewrite a kicad-overwrite hint to say whether write-back can apply the change."""
+        if warning.code != KICAD_OVERWRITE:
+            return warning
+        schematic = warning.where.removeprefix("kicad_schematic ")
+        plan = next((p for p in plans if p.schematic == schematic), None)
+        if plan is not None and plan.available:
+            hint = (
+                f"write-back can apply this to {schematic}: propose again with writeback "
+                "(or make the same change in KiCad, then run `puffin import kicad`)"
+            )
+        else:
+            reason = plan.reason if plan is not None else "it is not a pin move"
+            hint = (f"write-back can't apply this ({reason}); make the same change in "
+                    f"{schematic}, then run `puffin import kicad`")  # fmt: skip
+        return Issue(warning.severity, warning.code, warning.where, warning.message, hint)
 
     def propose_import_kicad(self) -> dict[str, Any]:
         project = self.project()
@@ -515,23 +584,69 @@ class PuffinService:
                     "stale-proposal", proposal_id, f"{name} changed since this proposal",
                     "call propose_import_kicad again",
                 )  # fmt: skip
-        result = project.batch(proposal.ops, from_kicad=proposal.kind == "import")
-        if not result.ok:  # cannot happen for an unchanged file; kept as a guard
-            return {"ok": False, "applied": False, "errors": issues_json(result.errors)}
-        if proposal.ops:
-            project.save()
-        if proposal.kind == "import":
-            for name in proposal.schematic_hashes:
-                record_sync(self.root, name, project.model)
+        for plan in proposal.writeback:
+            path = self.root / plan.schematic
+            if not path.is_file() or sha256(path.read_bytes()) != plan.original_sha256:
+                raise ToolError(
+                    "stale-proposal", proposal_id, f"{plan.schematic} changed since this proposal",
+                    "propose again with writeback",
+                )  # fmt: skip
+            if lock_file(path).exists():
+                raise ToolError(
+                    "writeback-unavailable", proposal_id, f"{path.name} is open in KiCad",
+                    "close it in KiCad, then propose again",
+                )  # fmt: skip
+        if proposal.writeback:
+            result = self._apply_with_writeback(project, proposal)
+        else:
+            result = project.batch(proposal.ops, from_kicad=proposal.kind == "import")
+            if not result.ok:  # cannot happen for an unchanged file; kept as a guard
+                return {"ok": False, "applied": False, "errors": issues_json(result.errors)}
+            if proposal.ops:
+                project.save()
+            if proposal.kind == "import":
+                for name in proposal.schematic_hashes:
+                    record_sync(self.root, name, project.model)
         self._loaded_sha = sha256(project.dumps())
         self._append_history(proposal, self._loaded_sha)
+        changed = [self.path.name] if proposal.ops else []
+        changed += [plan.schematic for plan in proposal.writeback]
         return {
             "ok": True,
             "applied": True,
             "proposal_id": proposal_id,
-            "changed_artifacts": [self.path.name] if proposal.ops else [],
-            "warnings": issues_json(result.warnings),
+            "changed_artifacts": changed,
+            "warnings": issues_json([w for w in result.warnings if w.code != KICAD_OVERWRITE]),
         }
+
+    def _apply_with_writeback(self, project: Project, proposal: Proposal) -> EditResult:
+        """Schematic(s), puffin.yaml and state.json together, or none of them."""
+        schematics_touched = [plan.schematic for plan in proposal.writeback]
+        targets = checkpoint.files_for(self.path.name, schematics_touched)
+        originals = {rel: (self.root / rel).read_bytes() if (self.root / rel).is_file() else None
+                     for rel in targets}  # fmt: skip
+        source_before = project.dumps()
+        checkpoint.save(self.root, targets)
+        try:
+            for plan in proposal.writeback:
+                atomic_write(self.root / plan.schematic, plan.modified)
+            result = project.batch(proposal.ops)
+            if not result.ok:
+                raise RuntimeError("the edit no longer validates")
+            project.save()
+            for name in schematics_touched:
+                record_sync(self.root, name, project.model)
+            checkpoint.bump(self.root)
+        except Exception:
+            for rel, data in originals.items():
+                if data is None:
+                    (self.root / rel).unlink(missing_ok=True)
+                else:
+                    atomic_write(self.root / rel, data)
+            self._project = Project(self.path, source_before, checkers=[check_generation])
+            checkpoint.discard_if_unused(self.root)
+            raise
+        return result
 
     def _append_history(self, proposal: Proposal, file_hash: str) -> None:
         entry = {

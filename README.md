@@ -82,7 +82,19 @@ The model gets tools to read the graph (`get_project`, `query_pins`, `query_net`
 `puffin.yaml` diff and the firmware header diff, and is refused as stale if the file changed in
 between. The server also sends a behavior contract: show the diff before applying, never edit
 generated files, and cite a doc section or project data for every electrical claim.
-Applied proposals are logged to `.puffin/history.jsonl` (gitignored). See
+Applied proposals are logged to `.puffin/history.jsonl` (gitignored).
+
+A pin move on a KiCad-managed net can also be written back to the schematic, when the pin
+connects through one label (directly or on a short wire stub) and the target pin is free:
+
+```bash
+uv run puffin move-pin U1 GPIO10 GPIO4 --writeback --path examples/dual-esp32s3-robot
+```
+
+Puffin shows both diffs, verifies the edited schematic with `kicad-cli` before anything is
+written, and refuses while KiCad has the schematic open. Review the result in KiCad, then run
+`puffin writeback confirm` (or `puffin writeback restore` to undo every unconfirmed write-back).
+See [docs/WRITEBACK.md](docs/WRITEBACK.md). See
 [docs/M3_MCP.md](docs/M3_MCP.md) for the full tool surface.
 
 ## Learn more

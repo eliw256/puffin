@@ -16,6 +16,7 @@ from mcp import Client
 from mcp.client.stdio import StdioServerParameters
 
 from puffin.core import OPERATIONS
+from puffin.kicad.export import find_kicad_cli
 from puffin.mcp.ops import MODELS
 from puffin.mcp.server import build_server
 from tests.test_kicad_changes import SCK_U1, edited, node
@@ -398,3 +399,17 @@ def test_puffin_mcp_command_starts(example_path: Path) -> None:
     )  # fmt: skip
     assert completed.returncode == 0, completed.stderr.decode()
     assert completed.stdout == b""
+
+
+@pytest.mark.skipif(find_kicad_cli() is None, reason="kicad-cli not installed")
+async def test_writeback_through_mcp(client: Client, example_path: Path) -> None:
+    ops = [{"op": "move_pin", "component": "U1", "from_pin": "GPIO10", "to_pin": "GPIO4"}]
+    plain = await ok(client, "propose_edit", ops=ops)
+    [hint] = [w["hint"] for w in plain["warnings"] if w["code"] == "kicad-overwrite"]
+    assert "write-back can apply this" in hint
+    proposal = await ok(client, "propose_edit", ops=ops, writeback=True)
+    assert proposal["writeback"][0]["verified"]
+    applied = await ok(client, "apply_edit", proposal_id=proposal["proposal_id"])
+    assert applied["changed_artifacts"] == ["puffin.yaml", "hw/robot/robot.kicad_sch"]
+    issues = (await ok(client, "check"))["issues"]
+    assert [i["code"] for i in issues] == ["writeback-unconfirmed"]

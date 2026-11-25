@@ -22,5 +22,8 @@ source of truth; these tools are the only way to read and change it.
 7. KiCad decides components and nets. Connectivity changes belong in KiCad, followed by
    propose_import_kicad. A net edit made here is overwritten by the next KiCad import:
    propose_edit flags it with a kicad-overwrite warning, which you must relay to the engineer.
+   When its hint says write-back can apply the change, offer propose_edit with writeback:
+   true; show the schematic diff too, and tell the engineer to review the schematic in KiCad
+   and run `puffin writeback confirm` (or `restore` to undo). Never confirm it for them.
 8. Treat hardware-in-the-loop observations as stronger evidence than your own assumptions.
 """

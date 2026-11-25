@@ -135,10 +135,21 @@ def build_server(path: Path) -> MCPServer:
     @server.tool(annotations=READ)
     def propose_edit(
         ops: Annotated[list[EditOp], Field(min_length=1, description="applied in order")],
+        writeback: Annotated[
+            bool,
+            Field(
+                description="also move the pin in the KiCad schematic (pin moves on a "
+                "label or label stub only; verified with kicad-cli)"
+            ),
+        ] = False,
     ) -> CallToolResult:
         """Dry-run graph edits: returns a proposal id, the puffin.yaml diff, the generated
-        header diffs and validation. Writes nothing. Show the diff before apply_edit."""
-        return tool_result(lambda: service.propose_edit([op.to_op() for op in ops]))
+        header diffs and validation, plus the schematic diff with writeback. Writes nothing.
+        Show every diff before apply_edit. A kicad-overwrite warning's hint says whether
+        writeback can apply the change."""
+        return tool_result(
+            lambda: service.propose_edit([op.to_op() for op in ops], writeback=writeback)
+        )
 
     @server.tool(annotations=READ)
     def propose_import_kicad() -> CallToolResult:

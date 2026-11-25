@@ -27,6 +27,7 @@ STATE_VERSION = 2
 
 DRIFT_CODES: dict[str, Severity] = {
     "graph-drift": Severity.WARNING,
+    "writeback-unconfirmed": Severity.WARNING,
     "schematic-drift": Severity.WARNING,
     "schematic-missing": Severity.WARNING,
     "schematic-unsynced": Severity.WARNING,
@@ -107,8 +108,22 @@ _DRY_RUN_HINT = "run `puffin import kicad --dry-run` to see what an import would
 
 def drift_issues(project_dir: Path, model: ProjectModel) -> list[Issue]:
     """Warnings when either side changed since the last real sync, or there was none."""
+    from puffin.kicad import checkpoint  # imported here: checkpoint depends on this module
+
     recorded = read_state(project_dir)["schematics"]
     issues = []
+    pending = checkpoint.read(project_dir)
+    if pending is not None and pending.pending:
+        names = sorted(f for f in pending.files if f.endswith(".kicad_sch"))
+        issues.append(
+            _issue(
+                "writeback-unconfirmed",
+                ".puffin/backup",
+                f"{pending.pending} unconfirmed write-back(s) to {', '.join(names)}",
+                "review the schematic in KiCad, then run `puffin writeback confirm`, or "
+                f"`puffin writeback restore` to undo all {pending.pending}",
+            )
+        )
     for schematic in schematics(model):
         current = schematic_hash(project_dir, schematic)
         where = f"kicad_schematic {schematic}"
