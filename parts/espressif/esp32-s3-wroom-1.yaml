@@ -1,0 +1,277 @@
+# ESP32-S3-WROOM-1 / WROOM-1U module.
+# Pin names, numbers, types, and functions are generated from Table 3-1 of the module datasheet.
+# Function tokens normalize vendor names: FSPICLK=spi2.sck, FSPID=spi2.mosi, FSPIQ=spi2.miso,
+# FSPICS0=spi2.cs, U1TXD=uart1.tx, ADC1_CH3=adc1.ch3. Unmapped names are kept in lowercase.
+# Flags: series datasheet Section 2.3.5 (P3 pins). Variants: module datasheet Tables 1-1, 1-2, 3-1.
+id: espressif/esp32-s3-wroom-1
+kind: mcu
+supply: {nominal_v: 3.3, min_v: 3.0, max_v: 3.6}  # module datasheet v1.8, Table 6-2
+sources:
+  - "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8 (2026-03-02): Tables 1-1, 1-2, 3-1, 4-1, 6-2"
+  - "ESP32-S3 Series Datasheet v2.2: Section 2.3.4, Section 2.3.5, Table 2-9, Table 2-14"
+docs:
+  datasheet: docs/esp32-s3-wroom-1.md
+  source_url: https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf
+pins:
+  GND:
+    numbers: [1, 40, 41]
+    datasheet_name: GND
+    type: P
+  3V3:
+    numbers: [2]
+    datasheet_name: 3V3
+    type: P
+  EN:
+    numbers: [3]
+    datasheet_name: EN
+    type: I
+    functions: [chip_enable]
+  GPIO4:
+    numbers: [4]
+    datasheet_name: IO4
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch4, adc1.ch3]
+    flags: []
+  GPIO5:
+    numbers: [5]
+    datasheet_name: IO5
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch5, adc1.ch4]
+    flags: []
+  GPIO6:
+    numbers: [6]
+    datasheet_name: IO6
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch6, adc1.ch5]
+    flags: []
+  GPIO7:
+    numbers: [7]
+    datasheet_name: IO7
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch7, adc1.ch6]
+    flags: []
+  GPIO15:
+    numbers: [8]
+    datasheet_name: IO15
+    type: I/O/T
+    functions: [rtc_gpio, gpio, uart0.rts, adc2.ch4, xtal_32k_p]
+    flags: []
+  GPIO16:
+    numbers: [9]
+    datasheet_name: IO16
+    type: I/O/T
+    functions: [rtc_gpio, gpio, uart0.cts, adc2.ch5, xtal_32k_n]
+    flags: []
+  GPIO17:
+    numbers: [10]
+    datasheet_name: IO17
+    type: I/O/T
+    functions: [rtc_gpio, gpio, uart1.tx, adc2.ch6]
+    flags: []
+  GPIO18:
+    numbers: [11]
+    datasheet_name: IO18
+    type: I/O/T
+    functions: [rtc_gpio, gpio, uart1.rx, adc2.ch7, clk_out3]
+    flags: []
+  GPIO8:
+    numbers: [12]
+    datasheet_name: IO8
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch8, adc1.ch7, subspics1]
+    flags: []
+  GPIO19:
+    numbers: [13]
+    datasheet_name: IO19
+    type: I/O/T
+    functions: [rtc_gpio, gpio, uart1.rts, adc2.ch8, clk_out2, usb_serial_jtag.dm]
+    flags: [usb]
+  GPIO20:
+    numbers: [14]
+    datasheet_name: IO20
+    type: I/O/T
+    functions: [rtc_gpio, gpio, uart1.cts, adc2.ch9, clk_out1, usb_serial_jtag.dp]
+    flags: [usb]
+  GPIO3:
+    numbers: [15]
+    datasheet_name: IO3
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch3, adc1.ch2]
+    flags: [strapping]
+  GPIO46:
+    numbers: [16]
+    datasheet_name: IO46
+    type: I/O/T
+    functions: [gpio]
+    flags: [strapping]
+  GPIO9:
+    numbers: [17]
+    datasheet_name: IO9
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch9, adc1.ch8, spi2.hd, subspihd]
+    flags: []
+  GPIO10:
+    numbers: [18]
+    datasheet_name: IO10
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch10, adc1.ch9, spi2.cs, spi2.io4, subspics0]
+    flags: []
+  GPIO11:
+    numbers: [19]
+    datasheet_name: IO11
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch11, adc2.ch0, spi2.mosi, spi2.io5, subspid]
+    flags: []
+  GPIO12:
+    numbers: [20]
+    datasheet_name: IO12
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch12, adc2.ch1, spi2.sck, spi2.io6, subspiclk]
+    flags: []
+  GPIO13:
+    numbers: [21]
+    datasheet_name: IO13
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch13, adc2.ch2, spi2.miso, spi2.io7, subspiq]
+    flags: []
+  GPIO14:
+    numbers: [22]
+    datasheet_name: IO14
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch14, adc2.ch3, spi2.wp, spi2.dqs, subspiwp]
+    flags: []
+  GPIO21:
+    numbers: [23]
+    datasheet_name: IO21
+    type: I/O/T
+    functions: [rtc_gpio, gpio]
+    flags: []
+  GPIO47:
+    numbers: [24]
+    datasheet_name: IO47
+    type: I/O/T
+    functions: [spiclk_p_diff, gpio, subspiclk_p_diff]
+    flags: []
+  GPIO48:
+    numbers: [25]
+    datasheet_name: IO48
+    type: I/O/T
+    functions: [spiclk_n_diff, gpio, subspiclk_n_diff]
+    flags: []
+  GPIO45:
+    numbers: [26]
+    datasheet_name: IO45
+    type: I/O/T
+    functions: [gpio]
+    flags: [strapping]
+  GPIO0:
+    numbers: [27]
+    datasheet_name: IO0
+    type: I/O/T
+    functions: [rtc_gpio, gpio]
+    flags: [strapping]
+  GPIO35:
+    numbers: [28]
+    datasheet_name: IO35
+    type: I/O/T
+    functions: [spiio6, gpio, spi2.mosi, subspid]
+    flags: []
+  GPIO36:
+    numbers: [29]
+    datasheet_name: IO36
+    type: I/O/T
+    functions: [spiio7, gpio, spi2.sck, subspiclk]
+    flags: []
+  GPIO37:
+    numbers: [30]
+    datasheet_name: IO37
+    type: I/O/T
+    functions: [spidqs, gpio, spi2.miso, subspiq]
+    flags: []
+  GPIO38:
+    numbers: [31]
+    datasheet_name: IO38
+    type: I/O/T
+    functions: [gpio, spi2.wp, subspiwp]
+    flags: []
+  GPIO39:
+    numbers: [32]
+    datasheet_name: IO39
+    type: I/O/T
+    functions: [jtag.tck, gpio, clk_out3, subspics1]
+    flags: [jtag]
+  GPIO40:
+    numbers: [33]
+    datasheet_name: IO40
+    type: I/O/T
+    functions: [jtag.tdo, gpio, clk_out2]
+    flags: [jtag]
+  GPIO41:
+    numbers: [34]
+    datasheet_name: IO41
+    type: I/O/T
+    functions: [jtag.tdi, gpio, clk_out1]
+    flags: [jtag]
+  GPIO42:
+    numbers: [35]
+    datasheet_name: IO42
+    type: I/O/T
+    functions: [jtag.tms, gpio]
+    flags: [jtag]
+  GPIO44:
+    numbers: [36]
+    datasheet_name: RXD0
+    type: I/O/T
+    functions: [uart0.rx, gpio, clk_out2]
+    flags: [uart0_console]
+  GPIO43:
+    numbers: [37]
+    datasheet_name: TXD0
+    type: I/O/T
+    functions: [uart0.tx, gpio, clk_out1]
+    flags: [uart0_console]
+  GPIO2:
+    numbers: [38]
+    datasheet_name: IO2
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch2, adc1.ch1]
+    flags: []
+  GPIO1:
+    numbers: [39]
+    datasheet_name: IO1
+    type: I/O/T
+    functions: [rtc_gpio, gpio, touch.ch1, adc1.ch0]
+    flags: []
+peripherals:  # routing: series datasheet Section 2.3.5, Table 2-9 and its note 2
+  gpio: {signals: [io], routable: gpio_matrix}
+  spi2: {signals: [sck, mosi, miso, cs, hd, wp], routable: gpio_matrix}
+  spi3: {signals: [sck, mosi, miso, cs, hd, wp], routable: gpio_matrix}
+  uart0: {signals: [tx, rx, rts, cts], routable: gpio_matrix}
+  uart1: {signals: [tx, rx, rts, cts], routable: gpio_matrix}
+  uart2: {signals: [tx, rx, rts, cts], routable: gpio_matrix}
+  i2c0: {signals: [sda, scl], routable: gpio_matrix}
+  i2c1: {signals: [sda, scl], routable: gpio_matrix}
+  adc1: {signals: [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9], routable: fixed}
+  adc2: {signals: [ch0, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9], routable: fixed}
+  usb_serial_jtag: {signals: [dm, dp], routable: fixed}
+  jtag: {signals: [tck, tdo, tdi, tms], routable: fixed}
+flag_policy:
+  strapping: {description: "sampled at reset; controls boot configuration (module datasheet Section 4)"}
+  usb: {description: "defaults to USB Serial/JTAG (series datasheet Section 2.3.4)", exempt_peripherals: [usb_serial_jtag]}
+  jtag: {description: "JTAG interface, often used for debugging (series datasheet Section 2.3.4)", exempt_peripherals: [jtag]}
+  uart0_console: {description: "UART0 interface, often used for debugging (series datasheet Section 2.3.4)", exempt_peripherals: [uart0]}
+  octal_psram: {description: "connected to Octal SPI PSRAM on this variant (module datasheet Table 3-1 note b)"}
+  vdd_spi_1v8: {description: "operates at 1.8 V on this variant (module datasheet Table 3-1 note c)"}
+variants:
+  N4: {}
+  N8: {}
+  N16: {}
+  H4: {}
+  N4R2: {}
+  N8R2: {}
+  N16R2: {}
+  N4R8: {extra_flags: {GPIO35: [octal_psram], GPIO36: [octal_psram], GPIO37: [octal_psram]}}
+  N8R8: {extra_flags: {GPIO35: [octal_psram], GPIO36: [octal_psram], GPIO37: [octal_psram]}}
+  N16R8: {extra_flags: {GPIO35: [octal_psram], GPIO36: [octal_psram], GPIO37: [octal_psram]}}
+  N16R16VA7: {extra_flags: {GPIO35: [octal_psram], GPIO36: [octal_psram], GPIO37: [octal_psram], GPIO47: [vdd_spi_1v8], GPIO48: [vdd_spi_1v8]}}
+timing: {}  # TODO(verify): add SPI timing from the Technical Reference Manual
