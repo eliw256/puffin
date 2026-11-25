@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { FAMILY_LABEL, familyColor } from "./families";
+  import DitherCanvas from "./DitherCanvas.svelte";
+  import { FAMILY_LABEL, familySwatch } from "./families";
   import { blocks } from "./markdown";
   import type { DocSection, PinInfo } from "./types";
 
@@ -11,8 +12,20 @@
   <header>
     <h2 class="mono">{pin.pin}</h2>
     <span class="sub mono">pin {pin.numbers.join(", ")} · {pin.datasheet_name ?? "—"} · {pin.type ?? "?"}</span>
-    <span class="family" style="--chip: {familyColor(pin.family)}">{FAMILY_LABEL[pin.family]}</span>
+    <span class="family">
+      {#if familySwatch(pin.family)}<DitherCanvas swatch={familySwatch(pin.family)!} width={16} height={12} cell={2} />{/if}
+      {FAMILY_LABEL[pin.family]}
+    </span>
   </header>
+
+  <section class="desc" aria-label="Datasheet description">
+    {#if pin.description}
+      <p class="mono">{pin.description}</p>
+      <p class="cite">Datasheet: {pin.description_source}</p>
+    {:else}
+      <p class="none">No datasheet description for this pin.</p>
+    {/if}
+  </section>
 
   <dl>
     <dt>Net</dt>
@@ -113,12 +126,28 @@
   }
   .family {
     margin-left: auto;
-    background: var(--chip);
-    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--cream);
     font-size: 12px;
     font-weight: 600;
-    padding: 1px 10px;
-    border-radius: 10px;
+    padding: 1px 8px 1px 4px;
+    border: 1px solid var(--bone);
+    border-radius: 4px;
+  }
+  .desc {
+    margin: -4px 0 14px;
+  }
+  .desc p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--bone);
+  }
+  .desc .cite {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--muted);
   }
   dl {
     display: grid;

@@ -293,3 +293,26 @@ throwaway.
   choice works. The header buttons jump to the three requested states.
 - **Pin colour** (`family`) is derived in the export script for now. It moves into the service
   in step 3, with `symbol_view()`.
+
+## Step 2 prototype, revision 1 (review feedback)
+
+- **Interaction.**
+  - Pointer down selects. A drag starts only after 5 px of movement with the button held, and
+    Escape cancels it.
+  - A drop on any candidate opens the review. Only GPIO4 has recorded diffs; other targets say
+    so.
+  - Zoom and pan are explicit (buttons, ⌘/Ctrl + scroll, dragging empty space). Nothing else
+    changes the view: the legend has a fixed height, and the toast is an overlay.
+- **Hover tooltip** after 300 ms: pin, what it does, family and flags, and the datasheet
+  description with its source. It sits above or below the row, never over it, and hides while
+  dragging.
+- **Families are ordered (Bayer 4×4) dithers of the §7 palette** (`web/src/lib/dither.json`).
+  - They're drawn as pin stubs and as a strip at the pin end of a solid tag. Text stays on solid
+    colour.
+  - SVG patterns are re-anchored to the screen's pixel grid from the SVG's screen transform, so
+    a cell is always a whole number of device pixels (checked at every zoom step and after
+    panning: worst offset 0).
+  - The family-to-swatch mapping is **provisional** until you pick from the swatch sheet
+    (`npm run swatches`).
+- **Pin descriptions** come from the datasheet, verbatim (`description`,
+  `pin_description_source`), and show in the tooltip and the detail panel with their citation.

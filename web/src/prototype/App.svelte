@@ -1,7 +1,8 @@
 <script lang="ts">
-  // Static prototype of the pin map (M4 step 2). Real fixture data, no backend.
+  // Static prototype of the pin map (M4 step 2, revised). Real fixture data, no backend.
   import { untrack } from "svelte";
-  import { FAMILY_LABEL, FAMILY_ORDER, familyColor, STATUS_GLYPH, STATUS_LABEL } from "../lib/families";
+  import DitherCanvas from "../lib/DitherCanvas.svelte";
+  import { FAMILY_LABEL, FAMILY_ORDER, familySwatch, STATUS_GLYPH, STATUS_LABEL } from "../lib/families";
   import PinDetail from "../lib/PinDetail.svelte";
   import PinMap, { type Drag } from "../lib/PinMap.svelte";
   import ReviewPanel from "../lib/ReviewPanel.svelte";
@@ -12,27 +13,29 @@
   let { snapshot }: Props = $props();
 
   type Scene = "select" | "drag" | "review";
-  let scene: Scene = $state("select");
+  let scene = $state<Scene>("select");
   // The starting selection comes from the snapshot once; afterwards it is the user's.
   let selected: string | null = $state(untrack(() => snapshot.selected));
   let drag: Drag | null = $state(null);
-  let reviewing = $state(false);
+  let review: { target: string } | null = $state(null);
   let toast: { kind: "refused" | "info"; text: string } | null = $state(null);
-  let applied: string | null = $state(null);
 
+  const RECORDED_TARGET = "GPIO4"; // the only move with a recorded proposal in the snapshot
   const legal = $derived(snapshot.legal);
   const source = $derived(legal.current_pin ?? "");
-  const statuses = $derived.by((): Record<string, DropStatus> | null => {
-    if (!drag && scene !== "drag") return null;
+  const statusMap = $derived.by((): Record<string, DropStatus> => {
     const map: Record<string, DropStatus> = {};
     for (const candidate of legal.candidates) map[candidate.pin] = candidate.status;
     return map;
   });
+  const statuses = $derived(drag || scene === "drag" ? statusMap : null);
   const sourceInfo = $derived(snapshot.pins[source]);
-  const reviewTitle = $derived(
-    `Move ${legal.component}.${source} → GPIO4 (net ${sourceInfo?.net}; ${legal.peripheral}.${legal.signal})`,
-  );
   const hasDatasheet = $derived(Object.keys(snapshot.doc).length > 0);
+  const draggable = $derived(source ? [source] : []);
+
+  function title(target: string): string {
+    return `Move ${legal.component}.${source} → ${target} (net ${sourceInfo?.net}; ${legal.peripheral}.${legal.signal})`;
+  }
 
   function pointNear(pin: string): [number, number] {
     const number = Object.entries(snapshot.pin_by_number).find(([, name]) => name === pin)?.[0];
@@ -44,9 +47,8 @@
   function show(next: Scene) {
     scene = next;
     toast = null;
-    applied = null;
-    reviewing = next === "review";
-    drag = next === "drag" ? { source, pointer: pointNear("GPIO4"), target: "GPIO4" } : null;
+    review = next === "review" ? { target: RECORDED_TARGET } : null;
+    drag = next === "drag" ? { source, pointer: pointNear(RECORDED_TARGET), target: RECORDED_TARGET } : null;
     if (next === "select") selected = snapshot.selected;
   }
 
@@ -54,30 +56,24 @@
     return legal.candidates.filter((c) => c.status === "free").map((c) => c.pin).slice(0, 6).join(", ");
   }
 
-  function dropped(from: string, target: string | null) {
+  function dropped(_from: string, target: string | null) {
     scene = "select";
     if (!target) return;
-    const status = statuses?.[target] ?? legal.candidates.find((c) => c.pin === target)?.status ?? "illegal";
+    const status = statusMap[target] ?? "illegal";
     if (status === "illegal") {
       toast = {
         kind: "refused",
         text: `Refused: ${target} can't carry ${legal.peripheral}.${legal.base}. Free legal pins include ${freeList()}.`,
       };
-    } else if (status === "in_use") {
-      const by = legal.candidates.find((c) => c.pin === target)?.assigned[0];
-      toast = {
-        kind: "refused",
-        text: `${target} is in use by ${by?.peripheral}.${by?.signal}. The proposal would fail validation; move that signal first.`,
-      };
-    } else if (target === "GPIO4") {
-      toast = null;
-      reviewing = true;
-    } else {
-      toast = { kind: "info", text: `Prototype: only the move ${from} → GPIO4 has a recorded proposal.` };
+      return;
     }
+    if (status === "current") {
+      toast = { kind: "info", text: `${legal.peripheral}.${legal.signal} is already on ${target}.` };
+      return;
+    }
+    toast = null;
+    review = { target };
   }
-
-  const draggable = $derived(source ? [source] : []);
 </script>
 
 <div class="app">
@@ -95,9 +91,9 @@
     </span>
     <div class="scenes" role="group" aria-label="Prototype states">
       <span>Prototype state</span>
-      <button class:active={scene === "select" && !reviewing} onclick={() => show("select")}>1 · Pin selected</button>
+      <button class:active={scene === "select" && !review} onclick={() => show("select")}>1 · Pin selected</button>
       <button class:active={scene === "drag"} onclick={() => show("drag")}>2 · Drag in progress</button>
-      <button class:active={reviewing} onclick={() => show("review")}>3 · Review</button>
+      <button class:active={review !== null} onclick={() => show("review")}>3 · Review</button>
     </div>
   </header>
 
@@ -108,9 +104,6 @@
           {#if toast.kind === "refused"}<span aria-hidden="true">⊘ </span>{/if}{toast.text}
           <button aria-label="Dismiss" onclick={() => (toast = null)}>×</button>
         </p>
-      {/if}
-      {#if applied}
-        <p class="toast info" role="status">{applied} <button aria-label="Dismiss" onclick={() => (applied = null)}>×</button></p>
       {/if}
       <div class="canvas">
         <PinMap
@@ -125,22 +118,36 @@
           ondrop={dropped}
         />
       </div>
+      <!-- Fixed height: switching between the family key and the drag key never moves the map. -->
       <footer class="legend" aria-label="Legend">
         {#if statuses}
-          <span class="legend-title">Dropping {legal.peripheral}.{legal.signal}:</span>
-          {#if drag?.target}
-            {@const s = statuses[drag.target] ?? "illegal"}
-            <span class="target-caption mono">on {drag.target}: {STATUS_GLYPH[s]} {STATUS_LABEL[s]}</span>
-          {/if}
-          {#each ["current", "free", "connected", "in_use", "needs_override", "illegal"] as const as s (s)}
-            <span class="status"><span class="glyph" aria-hidden="true">{STATUS_GLYPH[s]}</span>{STATUS_LABEL[s]}</span>
-          {/each}
+          <div class="legend-row">
+            <span class="legend-title">Dropping {legal.peripheral}.{legal.signal}</span>
+            <span class="target-caption mono" class:empty={!drag?.target}>
+              {#if drag?.target}on {drag.target}: {STATUS_GLYPH[statusMap[drag.target] ?? "illegal"]}
+                {STATUS_LABEL[statusMap[drag.target] ?? "illegal"]}{:else}over no pin{/if}
+            </span>
+            <span class="hint">Esc cancels</span>
+          </div>
+          <div class="legend-row">
+            {#each ["current", "free", "connected", "in_use", "needs_override", "illegal"] as const as s (s)}
+              <span class="status"><span class="glyph" aria-hidden="true">{STATUS_GLYPH[s]}</span>{STATUS_LABEL[s]}</span>
+            {/each}
+          </div>
         {:else}
-          {#each FAMILY_ORDER as family (family)}
-            <span class="swatch"><span class="chip" style="--chip: {familyColor(family)}"></span>{FAMILY_LABEL[family]}</span>
-          {/each}
-          <span class="swatch"><span class="chip hatched"></span>⚑ flagged (strapping, USB, JTAG, PSRAM)</span>
-          <span class="drag-hint">Drag the <span class="mono">{source}</span> tag to move {legal.peripheral}.{legal.signal}</span>
+          <div class="legend-row">
+            {#each FAMILY_ORDER as family (family)}
+              {@const swatch = familySwatch(family)}
+              <span class="swatch">
+                {#if swatch}<DitherCanvas {swatch} width={22} height={12} cell={2} />{:else}<span class="idle-chip"></span>{/if}
+                {FAMILY_LABEL[family]}
+              </span>
+            {/each}
+          </div>
+          <div class="legend-row">
+            <span class="swatch"><span class="flag-chip" aria-hidden="true"></span>flagged (strapping, USB, JTAG, PSRAM)</span>
+            <span class="hint">Click selects · drag the <span class="mono">{source}</span> tag to move {legal.peripheral}.{legal.signal} · ⌘/Ctrl + scroll zooms · drag empty space to pan</span>
+          </div>
         {/if}
       </footer>
     </section>
@@ -154,16 +161,19 @@
     </aside>
   </main>
 
-  {#if reviewing}
+  {#if review}
     <ReviewPanel
-      title={reviewTitle}
+      title={title(review.target)}
       proposal={snapshot.proposal}
       withWriteback={snapshot.proposal_writeback}
+      unavailable={review.target === RECORDED_TARGET
+        ? ""
+        : `Review preview only exists for ${RECORDED_TARGET} in this prototype. ${review.target} is ${STATUS_LABEL[statusMap[review.target] ?? "illegal"]}; the real UI proposes this move and shows its diffs and checks here.`}
       onclose={() => show("select")}
       onapply={(choice) => {
-        reviewing = false;
+        review = null;
         scene = "select";
-        applied = `Prototype: nothing applied. The real UI would apply to ${choice === "writeback" ? "puffin.yaml and the schematic" : "puffin.yaml"}.`;
+        toast = { kind: "info", text: `Prototype: nothing applied. The real UI would apply to ${choice === "writeback" ? "puffin.yaml and the schematic" : "puffin.yaml"}.` };
       }}
     />
   {/if}
@@ -179,10 +189,12 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 8px 16px;
+    height: 48px;
+    padding: 0 16px;
     border-bottom: 1px solid var(--line);
     background: var(--surface);
-    flex-wrap: wrap;
+    white-space: nowrap;
+    overflow: hidden;
   }
   .wordmark {
     font-weight: 600;
@@ -240,19 +252,17 @@
   main {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: minmax(0, 1fr) 380px;
     min-height: 0;
   }
   .map {
     position: relative;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) 64px;
     min-height: 0;
   }
   .canvas {
-    flex: 1;
     min-height: 0;
-    padding: 8px;
   }
   .side {
     border-left: 1px solid var(--line);
@@ -264,14 +274,22 @@
     color: var(--muted);
   }
   .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    align-items: center;
+    height: 64px;
+    overflow: hidden;
     padding: 8px 16px;
     border-top: 1px solid var(--line);
     font-size: 12.5px;
     color: var(--bone);
+    display: grid;
+    grid-template-rows: 22px 22px;
+    gap: 4px;
+  }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    white-space: nowrap;
+    overflow: hidden;
   }
   .legend-title {
     color: var(--cream);
@@ -283,42 +301,53 @@
     align-items: center;
     gap: 6px;
   }
-  .chip {
+  .idle-chip {
     width: 22px;
-    height: 12px;
-    border-radius: 6px;
-    background: var(--chip);
+    height: 2px;
+    background: var(--pin-idle);
   }
-  .chip.hatched {
-    background: repeating-linear-gradient(45deg, var(--bone) 0 2px, transparent 2px 5px);
+  .flag-chip {
+    width: 12px;
+    height: 12px;
     border: 1px solid var(--bone);
+    border-radius: 2px;
+    background: repeating-linear-gradient(45deg, var(--bone) 0 1.5px, var(--bg) 1.5px 3.5px);
   }
   .glyph {
     color: var(--cream);
   }
   .target-caption {
+    min-width: 230px;
     color: var(--cream);
     background: var(--blue);
     border: 1px solid var(--cream);
     border-radius: 10px;
     padding: 0 10px;
   }
-  .drag-hint {
+  .target-caption.empty {
+    background: none;
+    border-color: var(--line);
+    color: var(--muted);
+  }
+  .hint {
     margin-left: auto;
     color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .toast {
     position: absolute;
     top: 12px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 2;
+    z-index: 4;
     max-width: 80%;
     margin: 0;
     padding: 8px 36px 8px 12px;
     border-radius: var(--radius);
-    background: var(--surface-2);
+    background: var(--surface);
     color: var(--bone);
+    border: 1px solid var(--line);
     border-left: 3px solid var(--bone);
   }
   .toast.refused {

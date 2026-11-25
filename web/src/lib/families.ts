@@ -1,3 +1,4 @@
+import { FAMILY_SWATCH, type Swatch } from "./dither";
 import type { DropStatus, Family, PinInfo } from "./types";
 
 export const FAMILY_LABEL: Record<Family, string> = {
@@ -24,8 +25,18 @@ export const FAMILY_ORDER: Family[] = [
   "unused",
 ];
 
-export function familyColor(family: Family): string {
-  return `var(--fam-${family})`;
+/** The family's dither swatch; unused pins have none. */
+export function familySwatch(family: Family): Swatch | null {
+  return family === "unused" ? null : FAMILY_SWATCH[family];
+}
+
+/** What the pin does in this design, in a few words. */
+export function doing(pin: PinInfo): string {
+  const role = pin.assignments.map((a) => `${a.peripheral} ${a.signal}`).join(", ");
+  if (role && pin.net) return `${role} on net ${pin.net}`;
+  if (role) return `${role} (no net)`;
+  if (pin.net) return `net ${pin.net}, no assignment`;
+  return "not used in this design";
 }
 
 /** The text in a pin's outside tag: what the pin does, or nothing when it does nothing. */

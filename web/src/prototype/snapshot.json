@@ -461,6 +461,8 @@
   "3V3": {
    "assignments": [],
    "datasheet_name": "3V3",
+   "description": "Power supply",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "power",
    "flags": [],
    "flags_source": {},
@@ -478,6 +480,8 @@
   "EN": {
    "assignments": [],
    "datasheet_name": "EN",
+   "description": "High: on, enables the chip. Low: off, the chip powers off. Note: Do not leave the EN pin floating.",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -497,6 +501,8 @@
   "GND": {
    "assignments": [],
    "datasheet_name": "GND",
+   "description": "GND",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "ground",
    "flags": [],
    "flags_source": {},
@@ -521,6 +527,8 @@
     }
    ],
    "datasheet_name": "IO0",
+   "description": "RTC_GPIO0, GPIO0",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "gpio",
    "flags": [
     "strapping"
@@ -550,6 +558,8 @@
   "GPIO1": {
    "assignments": [],
    "datasheet_name": "IO1",
+   "description": "RTC_GPIO1, GPIO1, TOUCH1, ADC1_CH0",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -577,6 +587,8 @@
     }
    ],
    "datasheet_name": "IO10",
+   "description": "RTC_GPIO10, GPIO10, TOUCH10, ADC1_CH9, FSPICS0, FSPIIO4, SUBSPICS0",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "spi",
    "flags": [],
    "flags_source": {},
@@ -607,6 +619,8 @@
     }
    ],
    "datasheet_name": "IO11",
+   "description": "RTC_GPIO11, GPIO11, TOUCH11, ADC2_CH0, FSPID, FSPIIO5, SUBSPID",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "spi",
    "flags": [],
    "flags_source": {},
@@ -637,6 +651,8 @@
     }
    ],
    "datasheet_name": "IO12",
+   "description": "RTC_GPIO12, GPIO12, TOUCH12, ADC2_CH1, FSPICLK, FSPIIO6, SUBSPICLK",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "spi",
    "flags": [],
    "flags_source": {},
@@ -667,6 +683,8 @@
     }
    ],
    "datasheet_name": "IO13",
+   "description": "RTC_GPIO13, GPIO13, TOUCH13, ADC2_CH2, FSPIQ, FSPIIO7, SUBSPIQ",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "spi",
    "flags": [],
    "flags_source": {},
@@ -692,6 +710,8 @@
   "GPIO14": {
    "assignments": [],
    "datasheet_name": "IO14",
+   "description": "RTC_GPIO14, GPIO14, TOUCH14, ADC2_CH3, FSPIWP, FSPIDQS, SUBSPIWP",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -717,6 +737,8 @@
   "GPIO15": {
    "assignments": [],
    "datasheet_name": "IO15",
+   "description": "RTC_GPIO15, GPIO15, U0RTS, ADC2_CH4, XTAL_32K_P",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -740,6 +762,8 @@
   "GPIO16": {
    "assignments": [],
    "datasheet_name": "IO16",
+   "description": "RTC_GPIO16, GPIO16, U0CTS, ADC2_CH5, XTAL_32K_N",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -768,6 +792,8 @@
     }
    ],
    "datasheet_name": "IO17",
+   "description": "RTC_GPIO17, GPIO17, U1TXD, ADC2_CH6",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "uart",
    "flags": [],
    "flags_source": {},
@@ -795,6 +821,8 @@
     }
    ],
    "datasheet_name": "IO18",
+   "description": "RTC_GPIO18, GPIO18, U1RXD, ADC2_CH7, CLK_OUT3",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "uart",
    "flags": [],
    "flags_source": {},
@@ -818,6 +846,8 @@
   "GPIO19": {
    "assignments": [],
    "datasheet_name": "IO19",
+   "description": "RTC_GPIO19, GPIO19, U1RTS, ADC2_CH8, CLK_OUT2, USB_D-",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "usb"
@@ -846,6 +876,8 @@
   "GPIO2": {
    "assignments": [],
    "datasheet_name": "IO2",
+   "description": "RTC_GPIO2, GPIO2, TOUCH2, ADC1_CH1",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -868,6 +900,8 @@
   "GPIO20": {
    "assignments": [],
    "datasheet_name": "IO20",
+   "description": "RTC_GPIO20, GPIO20, U1CTS, ADC2_CH9, CLK_OUT1, USB_D+",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "usb"
@@ -896,6 +930,8 @@
   "GPIO21": {
    "assignments": [],
    "datasheet_name": "IO21",
+   "description": "RTC_GPIO21, GPIO21",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -916,6 +952,8 @@
   "GPIO3": {
    "assignments": [],
    "datasheet_name": "IO3",
+   "description": "RTC_GPIO3, GPIO3, TOUCH3, ADC1_CH2",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "strapping"
@@ -942,6 +980,8 @@
   "GPIO35": {
    "assignments": [],
    "datasheet_name": "IO35",
+   "description": "SPIIO6, GPIO35, FSPID, SUBSPID. Note: For modules with Octal SPI PSRAM, i.e., modules embedded with ESP32-S3R8 or ESP32-S3R16V, pins IO35, IO36, and IO37 are connected to the Octal SPI PSRAM and are not available for other uses.",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "octal_psram"
@@ -968,6 +1008,8 @@
   "GPIO36": {
    "assignments": [],
    "datasheet_name": "IO36",
+   "description": "SPIIO7, GPIO36, FSPICLK, SUBSPICLK. Note: For modules with Octal SPI PSRAM, i.e., modules embedded with ESP32-S3R8 or ESP32-S3R16V, pins IO35, IO36, and IO37 are connected to the Octal SPI PSRAM and are not available for other uses.",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "octal_psram"
@@ -994,6 +1036,8 @@
   "GPIO37": {
    "assignments": [],
    "datasheet_name": "IO37",
+   "description": "SPIDQS, GPIO37, FSPIQ, SUBSPIQ. Note: For modules with Octal SPI PSRAM, i.e., modules embedded with ESP32-S3R8 or ESP32-S3R16V, pins IO35, IO36, and IO37 are connected to the Octal SPI PSRAM and are not available for other uses.",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "octal_psram"
@@ -1020,6 +1064,8 @@
   "GPIO38": {
    "assignments": [],
    "datasheet_name": "IO38",
+   "description": "GPIO38, FSPIWP, SUBSPIWP",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1041,6 +1087,8 @@
   "GPIO39": {
    "assignments": [],
    "datasheet_name": "IO39",
+   "description": "MTCK, GPIO39, CLK_OUT3, SUBSPICS1",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "jtag"
@@ -1067,6 +1115,8 @@
   "GPIO4": {
    "assignments": [],
    "datasheet_name": "IO4",
+   "description": "RTC_GPIO4, GPIO4, TOUCH4, ADC1_CH3",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1089,6 +1139,8 @@
   "GPIO40": {
    "assignments": [],
    "datasheet_name": "IO40",
+   "description": "MTDO, GPIO40, CLK_OUT2",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "jtag"
@@ -1114,6 +1166,8 @@
   "GPIO41": {
    "assignments": [],
    "datasheet_name": "IO41",
+   "description": "MTDI, GPIO41, CLK_OUT1",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "jtag"
@@ -1139,6 +1193,8 @@
   "GPIO42": {
    "assignments": [],
    "datasheet_name": "IO42",
+   "description": "MTMS, GPIO42",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "jtag"
@@ -1163,6 +1219,8 @@
   "GPIO43": {
    "assignments": [],
    "datasheet_name": "TXD0",
+   "description": "U0TXD, GPIO43, CLK_OUT1",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "uart0_console"
@@ -1188,6 +1246,8 @@
   "GPIO44": {
    "assignments": [],
    "datasheet_name": "RXD0",
+   "description": "U0RXD, GPIO44, CLK_OUT2",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "uart0_console"
@@ -1213,6 +1273,8 @@
   "GPIO45": {
    "assignments": [],
    "datasheet_name": "IO45",
+   "description": "GPIO45",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "strapping"
@@ -1236,6 +1298,8 @@
   "GPIO46": {
    "assignments": [],
    "datasheet_name": "IO46",
+   "description": "GPIO46",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [
     "strapping"
@@ -1259,6 +1323,8 @@
   "GPIO47": {
    "assignments": [],
    "datasheet_name": "IO47",
+   "description": "SPICLK_P_DIFF,GPIO47, SUBSPICLK_P_DIFF. Note: For modules embedded with ESP32-S3R16V, as the VDD_SPI voltage of the ESP32-S3R16V chip is set to 1.8 V, the working voltage for GPIO47 and GPIO48 is also 1.8 V, which is different from other GPIOs.",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1280,6 +1346,8 @@
   "GPIO48": {
    "assignments": [],
    "datasheet_name": "IO48",
+   "description": "SPICLK_N_DIFF,GPIO48, SUBSPICLK_N_DIFF. Note: For modules embedded with ESP32-S3R16V, as the VDD_SPI voltage of the ESP32-S3R16V chip is set to 1.8 V, the working voltage for GPIO47 and GPIO48 is also 1.8 V, which is different from other GPIOs.",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1301,6 +1369,8 @@
   "GPIO5": {
    "assignments": [],
    "datasheet_name": "IO5",
+   "description": "RTC_GPIO5, GPIO5, TOUCH5, ADC1_CH4",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1323,6 +1393,8 @@
   "GPIO6": {
    "assignments": [],
    "datasheet_name": "IO6",
+   "description": "RTC_GPIO6, GPIO6, TOUCH6, ADC1_CH5",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1345,6 +1417,8 @@
   "GPIO7": {
    "assignments": [],
    "datasheet_name": "IO7",
+   "description": "RTC_GPIO7, GPIO7, TOUCH7, ADC1_CH6",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1367,6 +1441,8 @@
   "GPIO8": {
    "assignments": [],
    "datasheet_name": "IO8",
+   "description": "RTC_GPIO8, GPIO8, TOUCH8, ADC1_CH7, SUBSPICS1",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},
@@ -1390,6 +1466,8 @@
   "GPIO9": {
    "assignments": [],
    "datasheet_name": "IO9",
+   "description": "RTC_GPIO9, GPIO9, TOUCH9, ADC1_CH8, FSPIHD, SUBSPIHD",
+   "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
    "family": "unused",
    "flags": [],
    "flags_source": {},

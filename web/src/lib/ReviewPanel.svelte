@@ -6,11 +6,12 @@
     title: string;
     proposal: Proposal; // Puffin only
     withWriteback: Proposal; // the same edit, proposed with writeback: true
+    unavailable?: string; // prototype: no recorded proposal for this target
     verifyDelayMs?: number;
     onapply: (choice: "puffin" | "writeback") => void;
     onclose: () => void;
   };
-  let { title, proposal, withWriteback, verifyDelayMs = 900, onapply, onclose }: Props = $props();
+  let { title, proposal, withWriteback, unavailable = "", verifyDelayMs = 900, onapply, onclose }: Props = $props();
 
   type Choice = "puffin" | "writeback" | null;
   let choice: Choice = $state(null);
@@ -52,6 +53,9 @@
   </header>
 
   <div class="body">
+    {#if unavailable}
+      <p class="unavailable" role="status">{unavailable}</p>
+    {:else}
     {#if overwrite}
       <fieldset class="choice">
         <legend>This changes a net KiCad manages ({overwrite.message.match(/net[s]? ([^;]+)/)?.[1]}). Apply it to:</legend>
@@ -112,14 +116,15 @@
         {/each}
       </ul>
     {/if}
+    {/if}
   </div>
 
   <footer>
     <span class="hint">
-      {#if overwrite && choice === null}Choose where to apply it first.{/if}
+      {#if unavailable}Prototype: nothing to apply for this target.{:else if overwrite && choice === null}Choose where to apply it first.{/if}
     </span>
     <button class="secondary" onclick={onclose}>Cancel</button>
-    <button class="primary" disabled={!canApply} onclick={() => choice !== null && onapply(choice)}>
+    <button class="primary" disabled={!canApply || !!unavailable} onclick={() => choice !== null && onapply(choice)}>
       Apply{choice === "writeback" ? " to puffin.yaml + schematic" : choice === "puffin" ? " to puffin.yaml" : ""}
     </button>
   </footer>
@@ -216,6 +221,13 @@
   }
   .refused {
     color: var(--error-text);
+  }
+  .unavailable {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px dashed var(--bone);
+    border-radius: var(--radius);
+    color: var(--cream);
   }
   .verifying,
   .verified {

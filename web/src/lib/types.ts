@@ -50,6 +50,8 @@ export type PinInfo = {
   pin: string;
   numbers: number[];
   datasheet_name: string | null;
+  description: string | null; // verbatim from the datasheet
+  description_source: string | null;
   type: string | null;
   rail: string | null;
   functions: string[];

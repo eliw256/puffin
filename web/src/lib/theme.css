@@ -1,8 +1,8 @@
 /*
  * Puffin palette (PUFFIN_SPEC.md §7). Dark theme by default.
  * Red and orange are semantic only: error and warning. No pin function uses them.
- * Function colours share one perceived lightness (OKLCH L 0.78, C 0.085) and are only used as
- * fills behind --ink text; tests/test_web.py checks every contrast pair listed in CONTRAST.
+ * Pin families are ordered (Bayer) dithers of these colours, defined in dither.json; text never
+ * sits on a dither. tests/test_web.py checks every contrast pair listed in CONTRAST.
  */
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/600.css";
@@ -24,16 +24,9 @@
   --warning: #ec8f00;
   --ink: #282226; /* text on light fills */
 
-  /* pin function families (fills behind --ink text) */
-  --fam-gpio: #8bbdf0;
-  --fam-spi: #b5aeee;
-  --fam-i2c: #71c9c8;
-  --fam-uart: #86c9a5;
-  --fam-adc: #b5be7f;
-  --fam-usb: #d0a6da;
-  --fam-power: #f5dba0;
-  --fam-ground: #d8d2c8;
-  --fam-unused: #6b6f80; /* a line colour only; labels on unused pins use --bone on --bg */
+  /* pins: family swatches are ordered dithers of the colours above (dither.json); an idle pin
+     (no function in this design) is a thin line in --pin-idle */
+  --pin-idle: #6b6f80;
 
   /* diffs: additions tinted blue, removals tinted bone; never red/green */
   --diff-add: #2c3b62;
@@ -46,13 +39,11 @@
 
 /*
  * CONTRAST (foreground on background, minimum ratio):
- * --ink on --fam-gpio 4.5 | --ink on --fam-spi 4.5 | --ink on --fam-i2c 4.5
- * --ink on --fam-uart 4.5 | --ink on --fam-adc 4.5 | --ink on --fam-usb 4.5
- * --ink on --fam-power 4.5 | --ink on --fam-ground 4.5
+ * --ink on --cream 4.5 | --ink on --bone 4.5
  * --cream on --bg 4.5 | --cream on --surface 4.5 | --bone on --surface 4.5
  * --muted on --surface 4.5 | --error-text on --surface 4.5 | --cream on --blue 4.5
  * --bone on --diff-add 4.5 | --bone on --diff-del 4.5
- * --fam-unused on --bg 3.0 | --error on --bg 3.0 | --warning on --surface 3.0
+ * --pin-idle on --bg 3.0 | --error on --bg 3.0 | --warning on --surface 3.0
  */
 
 * {
