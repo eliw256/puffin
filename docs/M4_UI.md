@@ -274,3 +274,22 @@ throwaway.
 4. **Undo** covers entries applied from M4 on. Older history entries show "can't undo".
 5. **`docs/BACKLOG.md` is created.** Nothing in it is M4 scope except the write-back choice UX,
    which §e covers.
+
+## Step 2 prototype (as built)
+
+- **Open it:** `cd web && npm install && npm run prototype`. That starts Vite on
+  `http://127.0.0.1:5180` and opens your browser.
+- **Data:** the snapshot is `web/src/prototype/snapshot.json`, regenerated from the frozen
+  fixture by `uv run python web/scripts/export_snapshot.py`. The write-back proposal needs
+  kicad-cli.
+- **What's real:**
+  - the symbol geometry (new `symbol_graphics` in `puffin/kicad/schematic.py`);
+  - pins, assignments and flags (`query_pins`), and `legal_pins` for spi2 cs.imu;
+  - both proposals (`propose_edit` with and without write-back);
+  - the GPIO0 datasheet section and its citation.
+- **What's simulated:** the kicad-cli spinner is a 0.9 s timer, and Apply changes nothing.
+- **Interactive parts:** clicking a pin selects it, dragging the `spi2 cs.imu` tag works (a drop
+  on GPIO4 opens the review, an illegal drop is refused with its reason), and the write-back
+  choice works. The header buttons jump to the three requested states.
+- **Pin colour** (`family`) is derived in the export script for now. It moves into the service
+  in step 3, with `symbol_view()`.

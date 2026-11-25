@@ -1,0 +1,2102 @@
+{
+ "boards": [
+  "main",
+  "motor"
+ ],
+ "check": {
+  "errors": 0,
+  "issues": [],
+  "ok": true,
+  "warnings": 0
+ },
+ "component": "U1",
+ "doc": {
+  "GPIO0": {
+   "citation": "espressif/esp32-s3-wroom-1 #strapping-pins-table-4-1",
+   "doc": "espressif/docs/esp32-s3-wroom-1.md",
+   "heading": "Strapping pins (Table 4-1)",
+   "ok": true,
+   "part": "espressif/esp32-s3-wroom-1",
+   "section_id": "espressif/esp32-s3-wroom-1#strapping-pins-table-4-1",
+   "sources": [
+    "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8 (2026-03-02): Tables 1-1, 1-2, 3-1, 4-1, 6-2",
+    "ESP32-S3 Series Datasheet v2.2: Section 2.3.4, Section 2.3.5, Tables 2-4, 2-9, 2-14"
+   ],
+   "text": "| Pin | Default | Bit | Controls |\n|---|---|---|---|\n| GPIO0 | Weak pull-up | 1 | Boot mode |\n| GPIO3 | Floating | none | JTAG signal source |\n| GPIO45 | Weak pull-down | 0 | VDD_SPI voltage |\n| GPIO46 | Weak pull-down | 0 | Boot mode, ROM message printing |"
+  }
+ },
+ "legal": {
+  "base": "cs",
+  "candidates": [
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO4",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO5",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO6",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO7",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO15",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO16",
+    "status": "free"
+   },
+   {
+    "assigned": [
+     {
+      "peripheral": "uart1",
+      "signal": "tx"
+     }
+    ],
+    "flags": [],
+    "needs_override": [],
+    "net": "LINK_MAIN_TX",
+    "pin": "GPIO17",
+    "status": "in_use"
+   },
+   {
+    "assigned": [
+     {
+      "peripheral": "uart1",
+      "signal": "rx"
+     }
+    ],
+    "flags": [],
+    "needs_override": [],
+    "net": "LINK_MOTOR_TX",
+    "pin": "GPIO18",
+    "status": "in_use"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO8",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "usb"
+    ],
+    "needs_override": [
+     "usb"
+    ],
+    "net": null,
+    "pin": "GPIO19",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "usb"
+    ],
+    "needs_override": [
+     "usb"
+    ],
+    "net": null,
+    "pin": "GPIO20",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "strapping"
+    ],
+    "needs_override": [
+     "strapping"
+    ],
+    "net": null,
+    "pin": "GPIO3",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "strapping"
+    ],
+    "needs_override": [
+     "strapping"
+    ],
+    "net": null,
+    "pin": "GPIO46",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO9",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": "IMU_CS",
+    "pin": "GPIO10",
+    "status": "current"
+   },
+   {
+    "assigned": [
+     {
+      "peripheral": "spi2",
+      "signal": "mosi"
+     }
+    ],
+    "flags": [],
+    "needs_override": [],
+    "net": "IMU_MOSI",
+    "pin": "GPIO11",
+    "status": "in_use"
+   },
+   {
+    "assigned": [
+     {
+      "peripheral": "spi2",
+      "signal": "sck"
+     }
+    ],
+    "flags": [],
+    "needs_override": [],
+    "net": "IMU_SCK",
+    "pin": "GPIO12",
+    "status": "in_use"
+   },
+   {
+    "assigned": [
+     {
+      "peripheral": "spi2",
+      "signal": "miso"
+     }
+    ],
+    "flags": [],
+    "needs_override": [],
+    "net": "IMU_MISO",
+    "pin": "GPIO13",
+    "status": "in_use"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO14",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO21",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO47",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO48",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "strapping"
+    ],
+    "needs_override": [
+     "strapping"
+    ],
+    "net": null,
+    "pin": "GPIO45",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [
+     {
+      "peripheral": "gpio",
+      "signal": "io.boot_button"
+     }
+    ],
+    "flags": [
+     "strapping"
+    ],
+    "needs_override": [],
+    "net": "BOOT_MAIN",
+    "pin": "GPIO0",
+    "status": "in_use"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "octal_psram"
+    ],
+    "needs_override": [
+     "octal_psram"
+    ],
+    "net": null,
+    "pin": "GPIO35",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "octal_psram"
+    ],
+    "needs_override": [
+     "octal_psram"
+    ],
+    "net": null,
+    "pin": "GPIO36",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "octal_psram"
+    ],
+    "needs_override": [
+     "octal_psram"
+    ],
+    "net": null,
+    "pin": "GPIO37",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO38",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "jtag"
+    ],
+    "needs_override": [
+     "jtag"
+    ],
+    "net": null,
+    "pin": "GPIO39",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "jtag"
+    ],
+    "needs_override": [
+     "jtag"
+    ],
+    "net": null,
+    "pin": "GPIO40",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "jtag"
+    ],
+    "needs_override": [
+     "jtag"
+    ],
+    "net": null,
+    "pin": "GPIO41",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "jtag"
+    ],
+    "needs_override": [
+     "jtag"
+    ],
+    "net": null,
+    "pin": "GPIO42",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "uart0_console"
+    ],
+    "needs_override": [
+     "uart0_console"
+    ],
+    "net": null,
+    "pin": "GPIO44",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [
+     "uart0_console"
+    ],
+    "needs_override": [
+     "uart0_console"
+    ],
+    "net": null,
+    "pin": "GPIO43",
+    "status": "needs_override"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO2",
+    "status": "free"
+   },
+   {
+    "assigned": [],
+    "flags": [],
+    "needs_override": [],
+    "net": null,
+    "pin": "GPIO1",
+    "status": "free"
+   }
+  ],
+  "component": "U1",
+  "current_pin": "GPIO10",
+  "ok": true,
+  "peripheral": "spi2",
+  "routing": "gpio_matrix",
+  "signal": "cs.imu"
+ },
+ "note": "Generated by web/scripts/export_snapshot.py from the frozen fixture.",
+ "part": "espressif/esp32-s3-wroom-1",
+ "pin_by_number": {
+  "1": "GND",
+  "10": "GPIO17",
+  "11": "GPIO18",
+  "12": "GPIO8",
+  "13": "GPIO19",
+  "14": "GPIO20",
+  "15": "GPIO3",
+  "16": "GPIO46",
+  "17": "GPIO9",
+  "18": "GPIO10",
+  "19": "GPIO11",
+  "2": "3V3",
+  "20": "GPIO12",
+  "21": "GPIO13",
+  "22": "GPIO14",
+  "23": "GPIO21",
+  "24": "GPIO47",
+  "25": "GPIO48",
+  "26": "GPIO45",
+  "27": "GPIO0",
+  "28": "GPIO35",
+  "29": "GPIO36",
+  "3": "EN",
+  "30": "GPIO37",
+  "31": "GPIO38",
+  "32": "GPIO39",
+  "33": "GPIO40",
+  "34": "GPIO41",
+  "35": "GPIO42",
+  "36": "GPIO44",
+  "37": "GPIO43",
+  "38": "GPIO2",
+  "39": "GPIO1",
+  "4": "GPIO4",
+  "40": "GND",
+  "41": "GND",
+  "5": "GPIO5",
+  "6": "GPIO6",
+  "7": "GPIO7",
+  "8": "GPIO15",
+  "9": "GPIO16"
+ },
+ "pins": {
+  "3V3": {
+   "assignments": [],
+   "datasheet_name": "3V3",
+   "family": "power",
+   "flags": [],
+   "flags_source": {},
+   "functions": [],
+   "issues": [],
+   "net": "+3V3",
+   "numbers": [
+    2
+   ],
+   "overrides": [],
+   "pin": "3V3",
+   "rail": "3v3",
+   "type": "P"
+  },
+  "EN": {
+   "assignments": [],
+   "datasheet_name": "EN",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "chip_enable"
+   ],
+   "issues": [],
+   "net": "AUTO(U1.EN)",
+   "numbers": [
+    3
+   ],
+   "overrides": [],
+   "pin": "EN",
+   "rail": null,
+   "type": "I"
+  },
+  "GND": {
+   "assignments": [],
+   "datasheet_name": "GND",
+   "family": "ground",
+   "flags": [],
+   "flags_source": {},
+   "functions": [],
+   "issues": [],
+   "net": "GND",
+   "numbers": [
+    1,
+    40,
+    41
+   ],
+   "overrides": [],
+   "pin": "GND",
+   "rail": "gnd",
+   "type": "P"
+  },
+  "GPIO0": {
+   "assignments": [
+    {
+     "peripheral": "gpio",
+     "signal": "io.boot_button"
+    }
+   ],
+   "datasheet_name": "IO0",
+   "family": "gpio",
+   "flags": [
+    "strapping"
+   ],
+   "flags_source": {
+    "strapping": "part"
+   },
+   "functions": [
+    "rtc_gpio",
+    "gpio"
+   ],
+   "issues": [],
+   "net": "BOOT_MAIN",
+   "numbers": [
+    27
+   ],
+   "overrides": [
+    {
+     "allow": "strapping",
+     "note": "boot button, intentional"
+    }
+   ],
+   "pin": "GPIO0",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO1": {
+   "assignments": [],
+   "datasheet_name": "IO1",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch1",
+    "adc1.ch0"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    39
+   ],
+   "overrides": [],
+   "pin": "GPIO1",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO10": {
+   "assignments": [
+    {
+     "peripheral": "spi2",
+     "signal": "cs.imu"
+    }
+   ],
+   "datasheet_name": "IO10",
+   "family": "spi",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch10",
+    "adc1.ch9",
+    "spi2.cs",
+    "spi2.io4",
+    "subspics0"
+   ],
+   "issues": [],
+   "net": "IMU_CS",
+   "numbers": [
+    18
+   ],
+   "overrides": [],
+   "pin": "GPIO10",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO11": {
+   "assignments": [
+    {
+     "peripheral": "spi2",
+     "signal": "mosi"
+    }
+   ],
+   "datasheet_name": "IO11",
+   "family": "spi",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch11",
+    "adc2.ch0",
+    "spi2.mosi",
+    "spi2.io5",
+    "subspid"
+   ],
+   "issues": [],
+   "net": "IMU_MOSI",
+   "numbers": [
+    19
+   ],
+   "overrides": [],
+   "pin": "GPIO11",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO12": {
+   "assignments": [
+    {
+     "peripheral": "spi2",
+     "signal": "sck"
+    }
+   ],
+   "datasheet_name": "IO12",
+   "family": "spi",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch12",
+    "adc2.ch1",
+    "spi2.sck",
+    "spi2.io6",
+    "subspiclk"
+   ],
+   "issues": [],
+   "net": "IMU_SCK",
+   "numbers": [
+    20
+   ],
+   "overrides": [],
+   "pin": "GPIO12",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO13": {
+   "assignments": [
+    {
+     "peripheral": "spi2",
+     "signal": "miso"
+    }
+   ],
+   "datasheet_name": "IO13",
+   "family": "spi",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch13",
+    "adc2.ch2",
+    "spi2.miso",
+    "spi2.io7",
+    "subspiq"
+   ],
+   "issues": [],
+   "net": "IMU_MISO",
+   "numbers": [
+    21
+   ],
+   "overrides": [],
+   "pin": "GPIO13",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO14": {
+   "assignments": [],
+   "datasheet_name": "IO14",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch14",
+    "adc2.ch3",
+    "spi2.wp",
+    "spi2.dqs",
+    "subspiwp"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    22
+   ],
+   "overrides": [],
+   "pin": "GPIO14",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO15": {
+   "assignments": [],
+   "datasheet_name": "IO15",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "uart0.rts",
+    "adc2.ch4",
+    "xtal_32k_p"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    8
+   ],
+   "overrides": [],
+   "pin": "GPIO15",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO16": {
+   "assignments": [],
+   "datasheet_name": "IO16",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "uart0.cts",
+    "adc2.ch5",
+    "xtal_32k_n"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    9
+   ],
+   "overrides": [],
+   "pin": "GPIO16",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO17": {
+   "assignments": [
+    {
+     "peripheral": "uart1",
+     "signal": "tx"
+    }
+   ],
+   "datasheet_name": "IO17",
+   "family": "uart",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "uart1.tx",
+    "adc2.ch6"
+   ],
+   "issues": [],
+   "net": "LINK_MAIN_TX",
+   "numbers": [
+    10
+   ],
+   "overrides": [],
+   "pin": "GPIO17",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO18": {
+   "assignments": [
+    {
+     "peripheral": "uart1",
+     "signal": "rx"
+    }
+   ],
+   "datasheet_name": "IO18",
+   "family": "uart",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "uart1.rx",
+    "adc2.ch7",
+    "clk_out3"
+   ],
+   "issues": [],
+   "net": "LINK_MOTOR_TX",
+   "numbers": [
+    11
+   ],
+   "overrides": [],
+   "pin": "GPIO18",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO19": {
+   "assignments": [],
+   "datasheet_name": "IO19",
+   "family": "unused",
+   "flags": [
+    "usb"
+   ],
+   "flags_source": {
+    "usb": "part"
+   },
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "uart1.rts",
+    "adc2.ch8",
+    "clk_out2",
+    "usb_serial_jtag.dm"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    13
+   ],
+   "overrides": [],
+   "pin": "GPIO19",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO2": {
+   "assignments": [],
+   "datasheet_name": "IO2",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch2",
+    "adc1.ch1"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    38
+   ],
+   "overrides": [],
+   "pin": "GPIO2",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO20": {
+   "assignments": [],
+   "datasheet_name": "IO20",
+   "family": "unused",
+   "flags": [
+    "usb"
+   ],
+   "flags_source": {
+    "usb": "part"
+   },
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "uart1.cts",
+    "adc2.ch9",
+    "clk_out1",
+    "usb_serial_jtag.dp"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    14
+   ],
+   "overrides": [],
+   "pin": "GPIO20",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO21": {
+   "assignments": [],
+   "datasheet_name": "IO21",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    23
+   ],
+   "overrides": [],
+   "pin": "GPIO21",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO3": {
+   "assignments": [],
+   "datasheet_name": "IO3",
+   "family": "unused",
+   "flags": [
+    "strapping"
+   ],
+   "flags_source": {
+    "strapping": "part"
+   },
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch3",
+    "adc1.ch2"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    15
+   ],
+   "overrides": [],
+   "pin": "GPIO3",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO35": {
+   "assignments": [],
+   "datasheet_name": "IO35",
+   "family": "unused",
+   "flags": [
+    "octal_psram"
+   ],
+   "flags_source": {
+    "octal_psram": "variant:N16R8"
+   },
+   "functions": [
+    "spiio6",
+    "gpio",
+    "spi2.mosi",
+    "subspid"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    28
+   ],
+   "overrides": [],
+   "pin": "GPIO35",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO36": {
+   "assignments": [],
+   "datasheet_name": "IO36",
+   "family": "unused",
+   "flags": [
+    "octal_psram"
+   ],
+   "flags_source": {
+    "octal_psram": "variant:N16R8"
+   },
+   "functions": [
+    "spiio7",
+    "gpio",
+    "spi2.sck",
+    "subspiclk"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    29
+   ],
+   "overrides": [],
+   "pin": "GPIO36",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO37": {
+   "assignments": [],
+   "datasheet_name": "IO37",
+   "family": "unused",
+   "flags": [
+    "octal_psram"
+   ],
+   "flags_source": {
+    "octal_psram": "variant:N16R8"
+   },
+   "functions": [
+    "spidqs",
+    "gpio",
+    "spi2.miso",
+    "subspiq"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    30
+   ],
+   "overrides": [],
+   "pin": "GPIO37",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO38": {
+   "assignments": [],
+   "datasheet_name": "IO38",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "gpio",
+    "spi2.wp",
+    "subspiwp"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    31
+   ],
+   "overrides": [],
+   "pin": "GPIO38",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO39": {
+   "assignments": [],
+   "datasheet_name": "IO39",
+   "family": "unused",
+   "flags": [
+    "jtag"
+   ],
+   "flags_source": {
+    "jtag": "part"
+   },
+   "functions": [
+    "jtag.tck",
+    "gpio",
+    "clk_out3",
+    "subspics1"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    32
+   ],
+   "overrides": [],
+   "pin": "GPIO39",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO4": {
+   "assignments": [],
+   "datasheet_name": "IO4",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch4",
+    "adc1.ch3"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    4
+   ],
+   "overrides": [],
+   "pin": "GPIO4",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO40": {
+   "assignments": [],
+   "datasheet_name": "IO40",
+   "family": "unused",
+   "flags": [
+    "jtag"
+   ],
+   "flags_source": {
+    "jtag": "part"
+   },
+   "functions": [
+    "jtag.tdo",
+    "gpio",
+    "clk_out2"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    33
+   ],
+   "overrides": [],
+   "pin": "GPIO40",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO41": {
+   "assignments": [],
+   "datasheet_name": "IO41",
+   "family": "unused",
+   "flags": [
+    "jtag"
+   ],
+   "flags_source": {
+    "jtag": "part"
+   },
+   "functions": [
+    "jtag.tdi",
+    "gpio",
+    "clk_out1"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    34
+   ],
+   "overrides": [],
+   "pin": "GPIO41",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO42": {
+   "assignments": [],
+   "datasheet_name": "IO42",
+   "family": "unused",
+   "flags": [
+    "jtag"
+   ],
+   "flags_source": {
+    "jtag": "part"
+   },
+   "functions": [
+    "jtag.tms",
+    "gpio"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    35
+   ],
+   "overrides": [],
+   "pin": "GPIO42",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO43": {
+   "assignments": [],
+   "datasheet_name": "TXD0",
+   "family": "unused",
+   "flags": [
+    "uart0_console"
+   ],
+   "flags_source": {
+    "uart0_console": "part"
+   },
+   "functions": [
+    "uart0.tx",
+    "gpio",
+    "clk_out1"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    37
+   ],
+   "overrides": [],
+   "pin": "GPIO43",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO44": {
+   "assignments": [],
+   "datasheet_name": "RXD0",
+   "family": "unused",
+   "flags": [
+    "uart0_console"
+   ],
+   "flags_source": {
+    "uart0_console": "part"
+   },
+   "functions": [
+    "uart0.rx",
+    "gpio",
+    "clk_out2"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    36
+   ],
+   "overrides": [],
+   "pin": "GPIO44",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO45": {
+   "assignments": [],
+   "datasheet_name": "IO45",
+   "family": "unused",
+   "flags": [
+    "strapping"
+   ],
+   "flags_source": {
+    "strapping": "part"
+   },
+   "functions": [
+    "gpio"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    26
+   ],
+   "overrides": [],
+   "pin": "GPIO45",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO46": {
+   "assignments": [],
+   "datasheet_name": "IO46",
+   "family": "unused",
+   "flags": [
+    "strapping"
+   ],
+   "flags_source": {
+    "strapping": "part"
+   },
+   "functions": [
+    "gpio"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    16
+   ],
+   "overrides": [],
+   "pin": "GPIO46",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO47": {
+   "assignments": [],
+   "datasheet_name": "IO47",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "spiclk_p_diff",
+    "gpio",
+    "subspiclk_p_diff"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    24
+   ],
+   "overrides": [],
+   "pin": "GPIO47",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO48": {
+   "assignments": [],
+   "datasheet_name": "IO48",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "spiclk_n_diff",
+    "gpio",
+    "subspiclk_n_diff"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    25
+   ],
+   "overrides": [],
+   "pin": "GPIO48",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO5": {
+   "assignments": [],
+   "datasheet_name": "IO5",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch5",
+    "adc1.ch4"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    5
+   ],
+   "overrides": [],
+   "pin": "GPIO5",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO6": {
+   "assignments": [],
+   "datasheet_name": "IO6",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch6",
+    "adc1.ch5"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    6
+   ],
+   "overrides": [],
+   "pin": "GPIO6",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO7": {
+   "assignments": [],
+   "datasheet_name": "IO7",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch7",
+    "adc1.ch6"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    7
+   ],
+   "overrides": [],
+   "pin": "GPIO7",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO8": {
+   "assignments": [],
+   "datasheet_name": "IO8",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch8",
+    "adc1.ch7",
+    "subspics1"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    12
+   ],
+   "overrides": [],
+   "pin": "GPIO8",
+   "rail": null,
+   "type": "I/O/T"
+  },
+  "GPIO9": {
+   "assignments": [],
+   "datasheet_name": "IO9",
+   "family": "unused",
+   "flags": [],
+   "flags_source": {},
+   "functions": [
+    "rtc_gpio",
+    "gpio",
+    "touch.ch9",
+    "adc1.ch8",
+    "spi2.hd",
+    "subspihd"
+   ],
+   "issues": [],
+   "net": null,
+   "numbers": [
+    17
+   ],
+   "overrides": [],
+   "pin": "GPIO9",
+   "rail": null,
+   "type": "I/O/T"
+  }
+ },
+ "project": "robot-mainboard",
+ "proposal": {
+  "diff": "--- puffin.yaml\n+++ puffin.yaml\n@@ -35,7 +35,7 @@\n   IMU_SCK: [U1.GPIO12, U3.SCK]\n   IMU_MOSI: [U1.GPIO11, U3.SDI]\n   IMU_MISO: [U1.GPIO13, U3.SDO]\n-  IMU_CS: [U1.GPIO10, U3.CS]\n+  IMU_CS: [U1.GPIO4, U3.CS]\n   # Inter-MCU link, crossed TX/RX.\n   LINK_MAIN_TX: [U1.GPIO17, U2.GPIO18]\n   LINK_MOTOR_TX: [U2.GPIO17, U1.GPIO18]\n@@ -52,7 +52,7 @@\n       sck: GPIO12\n       mosi: GPIO11\n       miso: GPIO13\n-      cs.imu: GPIO10\n+      cs.imu: GPIO4\n     uart1:\n       tx: GPIO17\n       rx: GPIO18\n",
+  "generated": [
+   {
+    "board": "main",
+    "diff": "--- fw/main/main/include/puffin_pins.h\n+++ fw/main/main/include/puffin_pins.h\n@@ -14,7 +14,7 @@\n #define PUFFIN_SPI2_SCK_MAX_HZ 10000000 /* constraint on net IMU_SCK */\n #define PUFFIN_SPI2_MOSI GPIO_NUM_11 /* net IMU_MOSI */\n #define PUFFIN_SPI2_MISO GPIO_NUM_13 /* net IMU_MISO */\n-#define PUFFIN_SPI2_CS_IMU GPIO_NUM_10 /* net IMU_CS */\n+#define PUFFIN_SPI2_CS_IMU GPIO_NUM_4 /* net IMU_CS */\n \n /* uart1 */\n #define PUFFIN_UART1_TX GPIO_NUM_17 /* net LINK_MAIN_TX */\n",
+    "path": "fw/main/main/include/puffin_pins.h"
+   }
+  ],
+  "introduced_errors": [],
+  "ok": true,
+  "proposal_id": "p_3853db5ce65a",
+  "summary": [
+   "move_pin(U1.GPIO10->GPIO4)"
+  ],
+  "warnings": [
+   {
+    "code": "kicad-overwrite",
+    "hint": "write-back can apply this to hw/robot/robot.kicad_sch: propose again with writeback (or make the same change in KiCad, then run `puffin import kicad`)",
+    "message": "this edit changes KiCad-managed net IMU_CS; the next KiCad import reverts it unless the schematic changes too",
+    "severity": "warning",
+    "where": "kicad_schematic hw/robot/robot.kicad_sch"
+   }
+  ]
+ },
+ "proposal_writeback": {
+  "diff": "--- puffin.yaml\n+++ puffin.yaml\n@@ -35,7 +35,7 @@\n   IMU_SCK: [U1.GPIO12, U3.SCK]\n   IMU_MOSI: [U1.GPIO11, U3.SDI]\n   IMU_MISO: [U1.GPIO13, U3.SDO]\n-  IMU_CS: [U1.GPIO10, U3.CS]\n+  IMU_CS: [U1.GPIO4, U3.CS]\n   # Inter-MCU link, crossed TX/RX.\n   LINK_MAIN_TX: [U1.GPIO17, U2.GPIO18]\n   LINK_MOTOR_TX: [U2.GPIO17, U1.GPIO18]\n@@ -52,7 +52,7 @@\n       sck: GPIO12\n       mosi: GPIO11\n       miso: GPIO13\n-      cs.imu: GPIO10\n+      cs.imu: GPIO4\n     uart1:\n       tx: GPIO17\n       rx: GPIO18\n",
+  "generated": [
+   {
+    "board": "main",
+    "diff": "--- fw/main/main/include/puffin_pins.h\n+++ fw/main/main/include/puffin_pins.h\n@@ -14,7 +14,7 @@\n #define PUFFIN_SPI2_SCK_MAX_HZ 10000000 /* constraint on net IMU_SCK */\n #define PUFFIN_SPI2_MOSI GPIO_NUM_11 /* net IMU_MOSI */\n #define PUFFIN_SPI2_MISO GPIO_NUM_13 /* net IMU_MISO */\n-#define PUFFIN_SPI2_CS_IMU GPIO_NUM_10 /* net IMU_CS */\n+#define PUFFIN_SPI2_CS_IMU GPIO_NUM_4 /* net IMU_CS */\n \n /* uart1 */\n #define PUFFIN_UART1_TX GPIO_NUM_17 /* net LINK_MAIN_TX */\n",
+    "path": "fw/main/main/include/puffin_pins.h"
+   }
+  ],
+  "introduced_errors": [],
+  "ok": true,
+  "proposal_id": "p_ea516f274b13",
+  "summary": [
+   "move_pin(U1.GPIO10->GPIO4)"
+  ],
+  "warnings": [
+   {
+    "code": "kicad-writeback",
+    "hint": "review it in KiCad afterwards, then run `puffin writeback confirm`",
+    "message": "applying also writes hw/robot/robot.kicad_sch: label IMU_CS and its wire moved to U1.GPIO4; no-connect moved from U1.GPIO4 to GPIO10 (verified with kicad-cli)",
+    "severity": "warning",
+    "where": "kicad_schematic hw/robot/robot.kicad_sch"
+   }
+  ],
+  "writeback": [
+   {
+    "available": true,
+    "diff": "--- hw/robot/robot.kicad_sch\n+++ hw/robot/robot.kicad_sch\n@@ -2026,7 +2026,7 @@\n \t\t(uuid \"a9042d63-4e7d-487b-8994-473f6730c919\")\n \t)\n \t(no_connect\n-\t\t(at 49.53 85.09)\n+\t\t(at 49.53 100.33)\n \t\t(uuid \"aaf21ddf-b445-4551-abe0-47196864d31a\")\n \t)\n \t(no_connect\n@@ -2469,7 +2469,7 @@\n \t)\n \t(wire\n \t\t(pts\n-\t\t\t(xy 48.26 100.33) (xy 49.53 100.33)\n+\t\t\t(xy 48.26 85.09) (xy 49.53 85.09)\n \t\t)\n \t\t(stroke\n \t\t\t(width 0)\n@@ -2618,7 +2618,7 @@\n \t\t(uuid \"fed97b16-2efc-462b-a561-63e62736710c\")\n \t)\n \t(label \"IMU_CS\"\n-\t\t(at 48.26 100.33 180)\n+\t\t(at 48.26 85.09 180)\n \t\t(effects\n \t\t\t(font\n \t\t\t\t(size 1.27 1.27)\n",
+    "moves": [
+     "IMU_CS: U1.GPIO10 -> U1.GPIO4"
+    ],
+    "reason": "",
+    "schematic": "hw/robot/robot.kicad_sch",
+    "verified": true
+   }
+  ]
+ },
+ "selected": "GPIO0",
+ "symbol": {
+  "angle": 0,
+  "lib_id": "RF_Module:ESP32-S3-WROOM-1",
+  "pin_name_offset": 0.508,
+  "pins": [
+   {
+    "body": [
+     -12.7,
+     -22.86
+    ],
+    "hidden": false,
+    "name": "EN",
+    "number": "3",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -22.86
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     -17.78
+    ],
+    "hidden": false,
+    "name": "IO0",
+    "number": "27",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -17.78
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     -15.24
+    ],
+    "hidden": false,
+    "name": "IO1",
+    "number": "39",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -15.24
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     -12.7
+    ],
+    "hidden": false,
+    "name": "IO2",
+    "number": "38",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -12.7
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     -10.16
+    ],
+    "hidden": false,
+    "name": "IO3",
+    "number": "15",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -10.16
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     -7.62
+    ],
+    "hidden": false,
+    "name": "IO4",
+    "number": "4",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -7.62
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     -5.08
+    ],
+    "hidden": false,
+    "name": "IO5",
+    "number": "5",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -5.08
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     -2.54
+    ],
+    "hidden": false,
+    "name": "IO6",
+    "number": "6",
+    "outward": 180,
+    "point": [
+     -15.24,
+     -2.54
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     0.0
+    ],
+    "hidden": false,
+    "name": "IO7",
+    "number": "7",
+    "outward": 180,
+    "point": [
+     -15.24,
+     0.0
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     2.54
+    ],
+    "hidden": false,
+    "name": "IO8",
+    "number": "12",
+    "outward": 180,
+    "point": [
+     -15.24,
+     2.54
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     5.08
+    ],
+    "hidden": false,
+    "name": "IO9",
+    "number": "17",
+    "outward": 180,
+    "point": [
+     -15.24,
+     5.08
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     7.62
+    ],
+    "hidden": false,
+    "name": "IO10",
+    "number": "18",
+    "outward": 180,
+    "point": [
+     -15.24,
+     7.62
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     10.16
+    ],
+    "hidden": false,
+    "name": "IO11",
+    "number": "19",
+    "outward": 180,
+    "point": [
+     -15.24,
+     10.16
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     12.7
+    ],
+    "hidden": false,
+    "name": "IO12",
+    "number": "20",
+    "outward": 180,
+    "point": [
+     -15.24,
+     12.7
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     15.24
+    ],
+    "hidden": false,
+    "name": "IO13",
+    "number": "21",
+    "outward": 180,
+    "point": [
+     -15.24,
+     15.24
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     17.78
+    ],
+    "hidden": false,
+    "name": "IO14",
+    "number": "22",
+    "outward": 180,
+    "point": [
+     -15.24,
+     17.78
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     20.32
+    ],
+    "hidden": false,
+    "name": "IO15",
+    "number": "8",
+    "outward": 180,
+    "point": [
+     -15.24,
+     20.32
+    ]
+   },
+   {
+    "body": [
+     -12.7,
+     22.86
+    ],
+    "hidden": false,
+    "name": "IO16",
+    "number": "9",
+    "outward": 180,
+    "point": [
+     -15.24,
+     22.86
+    ]
+   },
+   {
+    "body": [
+     0.0,
+     -25.4
+    ],
+    "hidden": false,
+    "name": "3V3",
+    "number": "2",
+    "outward": 90,
+    "point": [
+     0.0,
+     -27.94
+    ]
+   },
+   {
+    "body": [
+     0.0,
+     25.4
+    ],
+    "hidden": false,
+    "name": "GND",
+    "number": "1",
+    "outward": 270,
+    "point": [
+     0.0,
+     27.94
+    ]
+   },
+   {
+    "body": [
+     0.0,
+     25.4
+    ],
+    "hidden": true,
+    "name": "GND",
+    "number": "40",
+    "outward": 270,
+    "point": [
+     0.0,
+     27.94
+    ]
+   },
+   {
+    "body": [
+     0.0,
+     25.4
+    ],
+    "hidden": true,
+    "name": "GND",
+    "number": "41",
+    "outward": 270,
+    "point": [
+     0.0,
+     27.94
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -22.86
+    ],
+    "hidden": false,
+    "name": "TXD0",
+    "number": "37",
+    "outward": 0,
+    "point": [
+     15.24,
+     -22.86
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -20.32
+    ],
+    "hidden": false,
+    "name": "RXD0",
+    "number": "36",
+    "outward": 0,
+    "point": [
+     15.24,
+     -20.32
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -17.78
+    ],
+    "hidden": false,
+    "name": "IO17",
+    "number": "10",
+    "outward": 0,
+    "point": [
+     15.24,
+     -17.78
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -15.24
+    ],
+    "hidden": false,
+    "name": "IO18",
+    "number": "11",
+    "outward": 0,
+    "point": [
+     15.24,
+     -15.24
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -12.7
+    ],
+    "hidden": false,
+    "name": "USB_D-",
+    "number": "13",
+    "outward": 0,
+    "point": [
+     15.24,
+     -12.7
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -10.16
+    ],
+    "hidden": false,
+    "name": "USB_D+",
+    "number": "14",
+    "outward": 0,
+    "point": [
+     15.24,
+     -10.16
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -7.62
+    ],
+    "hidden": false,
+    "name": "IO21",
+    "number": "23",
+    "outward": 0,
+    "point": [
+     15.24,
+     -7.62
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -5.08
+    ],
+    "hidden": false,
+    "name": "IO35",
+    "number": "28",
+    "outward": 0,
+    "point": [
+     15.24,
+     -5.08
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     -2.54
+    ],
+    "hidden": false,
+    "name": "IO36",
+    "number": "29",
+    "outward": 0,
+    "point": [
+     15.24,
+     -2.54
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     0.0
+    ],
+    "hidden": false,
+    "name": "IO37",
+    "number": "30",
+    "outward": 0,
+    "point": [
+     15.24,
+     0.0
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     2.54
+    ],
+    "hidden": false,
+    "name": "IO38",
+    "number": "31",
+    "outward": 0,
+    "point": [
+     15.24,
+     2.54
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     5.08
+    ],
+    "hidden": false,
+    "name": "IO39",
+    "number": "32",
+    "outward": 0,
+    "point": [
+     15.24,
+     5.08
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     7.62
+    ],
+    "hidden": false,
+    "name": "IO40",
+    "number": "33",
+    "outward": 0,
+    "point": [
+     15.24,
+     7.62
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     10.16
+    ],
+    "hidden": false,
+    "name": "IO41",
+    "number": "34",
+    "outward": 0,
+    "point": [
+     15.24,
+     10.16
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     12.7
+    ],
+    "hidden": false,
+    "name": "IO42",
+    "number": "35",
+    "outward": 0,
+    "point": [
+     15.24,
+     12.7
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     15.24
+    ],
+    "hidden": false,
+    "name": "IO45",
+    "number": "26",
+    "outward": 0,
+    "point": [
+     15.24,
+     15.24
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     17.78
+    ],
+    "hidden": false,
+    "name": "IO46",
+    "number": "16",
+    "outward": 0,
+    "point": [
+     15.24,
+     17.78
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     20.32
+    ],
+    "hidden": false,
+    "name": "IO47",
+    "number": "24",
+    "outward": 0,
+    "point": [
+     15.24,
+     20.32
+    ]
+   },
+   {
+    "body": [
+     12.7,
+     22.86
+    ],
+    "hidden": false,
+    "name": "IO48",
+    "number": "25",
+    "outward": 0,
+    "point": [
+     15.24,
+     22.86
+    ]
+   }
+  ],
+  "ref": "U1",
+  "shapes": [
+   {
+    "h": 50.8,
+    "kind": "rect",
+    "w": 25.4,
+    "x": -12.7,
+    "y": -25.4
+   },
+   {
+    "angle": 90,
+    "at": [
+     5.08,
+     -2.54
+    ],
+    "kind": "text",
+    "text": "PSRAM"
+   },
+   {
+    "kind": "polyline",
+    "points": [
+     [
+      7.62,
+      1.27
+     ],
+     [
+      6.35,
+      1.27
+     ],
+     [
+      6.35,
+      -6.35
+     ],
+     [
+      7.62,
+      -6.35
+     ]
+    ]
+   }
+  ],
+  "skipped": []
+ },
+ "variant": "N16R8"
+}

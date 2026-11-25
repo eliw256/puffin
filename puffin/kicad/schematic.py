@@ -324,3 +324,124 @@ def read_schematic(text: str) -> Schematic:
 
 def direction(angle: int) -> tuple[int, int]:
     return _DIRECTIONS[angle % 360]
+
+
+# --- drawable symbol --------------------------------------------------------------------
+
+
+def _xy(node: Node) -> Point:
+    values = node.atoms()
+    return num(values[0]), num(values[1])
+
+
+def _place(point: Point, angle: int) -> list[float]:
+    """Library point (y up) to instance-relative screen coordinates (y down), as floats."""
+    x, y = rotate((point[0], -point[1]), angle)
+    return [round(float(x), 4), round(float(y), 4)]
+
+
+def _hidden(node: Node) -> bool:
+    if any(child.atoms()[:1] == ["yes"] for child in node.children("hide")):
+        return True
+    return any(isinstance(a, Atom) and a.text == "hide" for a in node.items[1:])
+
+
+def symbol_graphics(sch: Schematic, ref: str) -> dict[str, object]:
+    """A placed symbol as drawable primitives, relative to its anchor, in mm (y down).
+
+    Draws what KiCad 9 symbols use: rectangle, polyline, circle, arc, text and pins. Anything
+    else is listed in `skipped`. Mirrored instances are refused like everywhere else.
+    """
+    inst = sch.instances[ref]
+    if inst.mirror is not None:
+        raise SchematicError(f"{ref} is mirrored ({inst.mirror}); not supported in v1")
+    lib_symbols = sch.root.child("lib_symbols")
+    lib = next(
+        (s for s in (lib_symbols.children("symbol") if lib_symbols else [])
+         if s.atoms()[:1] == [inst.lib_id]),
+        None,
+    )  # fmt: skip
+    if lib is None:
+        raise SchematicError(f"{ref}: no embedded library symbol {inst.lib_id}")
+    angle = inst.angle
+    shapes: list[dict[str, object]] = []
+    pins: list[dict[str, object]] = []
+    skipped: set[str] = set()
+    names_offset = lib.child("pin_names")
+    offset_node = names_offset.child("offset") if names_offset is not None else None
+    for unit_node in lib.children("symbol"):
+        suffix = unit_node.atoms()[0].rsplit("_", 2)
+        unit, style = (int(suffix[1]), int(suffix[2])) if len(suffix) == 3 else (0, 0)
+        if unit not in (0, inst.unit) or style not in (0, 1):
+            continue
+        for item in unit_node.items[1:]:
+            if not isinstance(item, Node):
+                continue
+            kind = item.head
+            if kind == "rectangle":
+                start, end = item.child("start"), item.child("end")
+                if start is None or end is None:
+                    continue
+                a, b = _place(_xy(start), angle), _place(_xy(end), angle)
+                shapes.append({"kind": "rect", "x": min(a[0], b[0]), "y": min(a[1], b[1]),
+                               "w": abs(a[0] - b[0]), "h": abs(a[1] - b[1])})  # fmt: skip
+            elif kind == "polyline":
+                pts = item.child("pts")
+                points = [_place(_xy(p), angle) for p in (pts.children("xy") if pts else [])]
+                shapes.append({"kind": "polyline", "points": points})
+            elif kind == "circle":
+                center, radius = item.child("center"), item.child("radius")
+                if center is None or radius is None:
+                    continue
+                shapes.append({"kind": "circle", "center": _place(_xy(center), angle),
+                               "r": float(num(radius.atoms()[0]))})  # fmt: skip
+            elif kind == "arc":
+                parts = [item.child(k) for k in ("start", "mid", "end")]
+                if all(p is not None for p in parts):
+                    arc = [_place(_xy(p), angle) for p in parts if p]
+                    shapes.append({"kind": "arc", "points": arc})
+            elif kind == "text":
+                at = item.child("at")
+                if at is None:
+                    continue
+                values = at.atoms()
+                raw = int(Decimal(values[2])) if len(values) > 2 else 0
+                text_angle = (raw // 10 if raw >= 360 else raw) + angle
+                shapes.append({"kind": "text", "text": item.atoms()[0],
+                               "at": _place((num(values[0]), num(values[1])), angle),
+                               "angle": text_angle % 360})  # fmt: skip
+            elif kind == "pin":
+                point, pin_angle, _ = at_of(item)
+                length_node, name_node = item.child("length"), item.child("name")
+                number_node = item.child("number")
+                if number_node is None:
+                    continue
+                length = num(length_node.atoms()[0]) if length_node else Decimal(0)
+                inward = rotate(
+                    (length if pin_angle == 0 else -length if pin_angle == 180 else Decimal(0),
+                     -length if pin_angle == 90 else length if pin_angle == 270 else Decimal(0)),
+                    angle,
+                )  # fmt: skip
+                tip = _place(point, angle)
+                pins.append({
+                    "number": number_node.atoms()[0],
+                    "name": name_node.atoms()[0] if name_node else "",
+                    "point": tip,
+                    "body": [
+                        round(tip[0] + float(inward[0]), 4),
+                        round(tip[1] + float(inward[1]), 4),
+                    ],
+                    "outward": (pin_angle + 180 + angle) % 360,
+                    "hidden": _hidden(item),
+                })  # fmt: skip
+            elif kind not in {"property"}:
+                skipped.add(kind)
+    return {
+        "ref": ref,
+        "lib_id": inst.lib_id,
+        "angle": angle,
+        "pin_name_offset": float(num(offset_node.atoms()[0])) if offset_node else 0.508,
+        "shapes": shapes,
+        "pins": pins,
+        "skipped": sorted(skipped),
+    }
