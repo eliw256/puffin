@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 from puffin.core import RULES, ProjectModel, validate
 from puffin.library import PartLibrary
+from puffin.library.loader import bundled_parts_dir
 
 Data = dict[str, Any]
 Mutator = Callable[[Data], None]
 WROOM = "espressif/esp32-s3-wroom-1"
+LIBRARY = PartLibrary([Path(__file__).parent / "fixtures" / "parts", bundled_parts_dir()])
 
 
 def base() -> Data:
@@ -44,11 +47,7 @@ def base() -> Data:
 
 
 def codes(data: Data) -> set[str]:
-    return {i.code for i in validate(ProjectModel.model_validate(data), PartLibrary())}
-
-
-def noop(_: Data) -> None:
-    return None
+    return {i.code for i in validate(ProjectModel.model_validate(data), LIBRARY)}
 
 
 def assign(data: Data, peripheral: str, signal: str, pin: str, net: str | None = None) -> None:
@@ -90,12 +89,25 @@ def link_two_mcus(data: Data) -> None:
     data["assignments"]["U3"] = {"uart1": {"rx": "GPIO18"}}
 
 
-def set_invalid_part(data: Data) -> None:
-    data["components"]["U2"]["part"] = "bad/part"
+def part_of(ref: str, part: str) -> Mutator:
+    return lambda d: d["components"][ref].update(part=part)
 
 
+def add_imu(ref: str) -> Mutator:
+    return lambda d: d["components"].__setitem__(ref, {"part": "example/spi-imu", "board": "a"})
+
+
+def move_firmware_to_b(data: Data) -> None:
+    data["components"]["U1"]["board"] = "b"
+    data["boards"]["b"] = data["boards"].pop("a")
+    data["components"]["U2"]["board"] = "b"
+    data["boards"]["a"] = {}
+
+
+# Each rule: (near-miss that must be fully clean, minimal change that must trigger the rule).
 CASES: dict[str, tuple[Mutator, Mutator]] = {
-    "unknown-part": (noop, lambda d: d["components"]["U2"].update(part="nope/none")),
+    "unknown-part": (add_imu("U4"), part_of("U2", "nope/none")),
+    "invalid-part": (part_of("U2", "local/imu"), part_of("U2", "local/broken")),
     "unknown-board": (
         lambda d: d["components"]["U2"].update(board="b"),
         lambda d: d["components"]["U2"].update(board="zzz"),
@@ -104,14 +116,23 @@ CASES: dict[str, tuple[Mutator, Mutator]] = {
         lambda d: d["components"]["U1"].update(variant="N8"),
         lambda d: d["components"]["U1"].update(variant="N99"),
     ),
-    "unknown-component": (noop, lambda d: d["nets"]["SCK"].append("U9.GPIO1")),
-    "unknown-pin": (noop, lambda d: d["nets"]["SCK"].append("U1.GPIO99")),
+    "unknown-component": (
+        chain(add_imu("U4"), lambda d: d["nets"]["VCC"].append("U4.VDD")),
+        lambda d: d["nets"]["VCC"].append("U9.VDD"),
+    ),
+    "unknown-pin": (use("GPIO21"), use("GPIO99")),
     "unknown-net": (
         lambda d: d.update(constraints=[{"net": "SCK", "max_freq_hz": 1}]),
         lambda d: d.update(constraints=[{"net": "NOPE", "max_freq_hz": 1}]),
     ),
-    "pin-net-conflict": (noop, lambda d: d["nets"]["CS"].append("U1.GPIO12")),
-    "unknown-peripheral": (noop, lambda d: assign(d, "spi9", "sck", "GPIO4", "X")),
+    "pin-net-conflict": (
+        lambda d: d["nets"]["CS"].append("U1.GPIO4"),
+        lambda d: d["nets"]["CS"].append("U1.GPIO12"),
+    ),
+    "unknown-peripheral": (
+        lambda d: assign(d, "i2c0", "sda", "GPIO4", "X"),
+        lambda d: assign(d, "spi9", "sda", "GPIO4", "X"),
+    ),
     "unknown-signal": (
         lambda d: assign(d, "spi2", "mosi", "GPIO4", "X"),
         lambda d: assign(d, "spi2", "bogus", "GPIO4", "X"),
@@ -120,20 +141,28 @@ CASES: dict[str, tuple[Mutator, Mutator]] = {
         lambda d: assign(d, "adc1", "ch3", "GPIO4", "X"),
         lambda d: assign(d, "adc1", "ch3", "GPIO5", "X"),
     ),
-    "pin-double-assigned": (noop, lambda d: assign(d, "spi2", "mosi", "GPIO12")),
+    "pin-double-assigned": (
+        lambda d: assign(d, "spi2", "mosi", "GPIO11", "X"),
+        lambda d: assign(d, "spi2", "mosi", "GPIO12"),
+    ),
     "flagged-pin": (chain(use("GPIO0"), override("U1.GPIO0", "strapping")), use("GPIO0")),
-    "assignment-unconnected": (noop, lambda d: d["nets"].update(SCK=["U1.GPIO14", "U2.SCK"])),
+    "assignment-unconnected": (
+        lambda d: (
+            d["nets"].update(SCK=["U1.GPIO14", "U2.SCK"]),
+            assign(d, "spi2", "sck", "GPIO14"),
+        ),
+        lambda d: d["nets"].update(SCK=["U1.GPIO14", "U2.SCK"]),
+    ),
     "signals-shorted": (link_two_mcus, short_sck_and_cs),
     "signal-on-power-net": (
         lambda d: assign(d, "spi2", "mosi", "GPIO4", "X"),
         lambda d: (assign(d, "spi2", "mosi", "GPIO4"), d["nets"]["VCC"].append("U1.GPIO4")),
     ),
-    "firmware-mcu-board": (noop, lambda d: d["components"]["U1"].update(board="b")),
+    "firmware-mcu-board": (move_firmware_to_b, lambda d: d["components"]["U1"].update(board="b")),
     "unused-override": (
         chain(use("GPIO0"), override("U1.GPIO0", "strapping")),
         override("U1.GPIO4", "strapping"),
     ),
-    "invalid-part": (noop, set_invalid_part),
 }
 
 
@@ -141,28 +170,29 @@ def test_every_rule_has_cases() -> None:
     assert set(CASES) == set(RULES)
 
 
-@pytest.mark.parametrize("code", sorted(set(CASES) - {"invalid-part"}))
+def test_baseline_is_clean() -> None:
+    assert codes(base()) == set()
+
+
+@pytest.mark.parametrize("code", sorted(CASES))
 def test_rule_passes(code: str) -> None:
     data = base()
     CASES[code][0](data)
-    assert code not in codes(data)
+    assert codes(data) == set()
 
 
-@pytest.mark.parametrize("code", sorted(set(CASES) - {"invalid-part"}))
+@pytest.mark.parametrize("code", sorted(CASES))
 def test_rule_fails(code: str) -> None:
     data = base()
     CASES[code][1](data)
     assert code in codes(data)
 
 
-def test_invalid_part_rule(tmp_path: Any) -> None:
+def test_chip_pin_absent_from_module_is_unknown() -> None:
+    """GPIO33 exists on the ESP32-S3 chip but is not brought out on the WROOM-1 module."""
     data = base()
-    assert "invalid-part" not in codes(data)
-    (tmp_path / "bad").mkdir()
-    (tmp_path / "bad" / "part.yaml").write_text("id: bad/part\nunexpected: 1\n")
-    set_invalid_part(data)
-    found = validate(ProjectModel.model_validate(data), PartLibrary([tmp_path]))
-    assert "invalid-part" in {i.code for i in found}
+    use("GPIO33")(data)
+    assert "unknown-pin" in codes(data)
 
 
 @pytest.mark.parametrize(
@@ -202,6 +232,6 @@ def test_validation_is_deterministic() -> None:
     data = base()
     CASES["pin-net-conflict"][1](data)
     CASES["unknown-pin"][1](data)
-    library = PartLibrary()
+    library = LIBRARY
     model = ProjectModel.model_validate(data)
     assert validate(model, library) == validate(model, library)

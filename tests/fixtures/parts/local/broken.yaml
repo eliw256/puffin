@@ -1,0 +1,5 @@
+# Deliberately malformed: unknown top-level key.
+id: local/broken
+kind: sensor
+pins: {}
+unexpected: 1
