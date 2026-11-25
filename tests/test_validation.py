@@ -17,7 +17,7 @@ WROOM = "espressif/esp32-s3-wroom-1"
 
 def base() -> Data:
     return {
-        "puffin": 0.1,
+        "puffin": "0.1",
         "project": "t",
         "boards": {
             "a": {

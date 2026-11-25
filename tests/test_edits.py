@@ -129,7 +129,7 @@ def test_override_requires_note(project: Project) -> None:
 def test_add_override_to_empty_list_reloads(tmp_path: Path) -> None:
     path = tmp_path / "puffin.yaml"
     path.write_text(
-        "puffin: 0.1\nproject: x\nboards:\n  a: {}\ncomponents:\n  U1:\n"
+        "puffin: '0.1'\nproject: x\nboards:\n  a: {}\ncomponents:\n  U1:\n"
         "    part: espressif/esp32-s3-wroom-1\n    board: a\n    variant: N8\n"
         "nets:\n  BOOT: [U1.GPIO0]\n\noverrides: []  # none yet\n\nintent: {}\n"
     )
@@ -171,6 +171,7 @@ def test_edit_save_reload_preserves_comments(project: Project, example_path: Pat
     text = example_path.read_text()
     assert "# Inter-MCU link, crossed TX/RX." in text
     assert "10_000_000" in text
+    assert 'puffin: "0.1"' in text
     reloaded = Project.load(example_path)
     assert reloaded.check() == []
     assert reloaded.save() is False

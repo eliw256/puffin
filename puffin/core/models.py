@@ -7,7 +7,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, PositiveInt, field_validator
 
-SCHEMA_VERSION = 0.1
+SCHEMA_VERSION = "0.1"
 
 _ENDPOINT = re.compile(r"^[^.\s]+\.[^.\s]+$")
 
@@ -69,7 +69,7 @@ class Override(_GraphModel):
 
 
 class ProjectModel(_GraphModel):
-    puffin: float
+    puffin: str
     project: str
     boards: dict[str, Board] = Field(default_factory=dict)
     components: dict[str, Component] = Field(default_factory=dict)
@@ -79,9 +79,19 @@ class ProjectModel(_GraphModel):
     overrides: list[Override] = Field(default_factory=list)
     intent: dict[str, str] = Field(default_factory=dict)
 
+    @field_validator("puffin", mode="before")
+    @classmethod
+    def _version_is_quoted(cls, value: object) -> object:
+        # A bare 0.1 is a YAML float: 0.1 and 0.10 would be indistinguishable.
+        if isinstance(value, int | float) and not isinstance(value, bool):
+            raise ValueError(
+                f'schema version must be a quoted string, e.g. puffin: "{SCHEMA_VERSION}"'
+            )
+        return value
+
     @field_validator("puffin")
     @classmethod
-    def _supported_version(cls, value: float) -> float:
+    def _supported_version(cls, value: str) -> str:
         if value != SCHEMA_VERSION:
-            raise ValueError(f"unsupported schema version {value}; expected {SCHEMA_VERSION}")
+            raise ValueError(f'unsupported schema version "{value}"; expected "{SCHEMA_VERSION}"')
         return value

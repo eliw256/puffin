@@ -1,5 +1,5 @@
 # Reduced dual-ESP32-S3 robot board: two firmware domains on one schematic.
-puffin: 0.1
+puffin: "0.1"
 project: robot-mainboard
 
 boards:
