@@ -30,3 +30,11 @@ Resolutions of the open decisions in `PUFFIN_SPEC.md` §11, confirmed 2026-11-23
 - Cross-board link arrows follow signal direction: `->` when this board's pin drives the other,
   `<-` when it receives, and `<->` when either direction is unknown or both sides drive.
   Directions come from part data (`peripherals.<p>.signals`).
+
+## Supply rails (M2 review)
+
+Power pins (`type: P`) may name a `rail`: a short lowercase string, `gnd` for ground and the
+nominal voltage for a supply (`"3v3"`, `"1v8"`, `"5v"`). Rails are compared as plain strings,
+with no voltage arithmetic. A net holding power pins of two different rails fails validation
+with `supply-conflict`, so `puffin check`, every edit, and every import reject it. Power pins
+without a rail are not checked, which keeps parts without rail data usable.

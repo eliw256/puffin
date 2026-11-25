@@ -68,7 +68,7 @@ def test_references_lists_every_kind_in_file_order(project: Project) -> None:
         ("net", "nets.IMU_MOSI", "U3.SDI", True),
         ("net", "nets.IMU_MISO", "U3.SDO", True),
         ("net", "nets.IMU_CS", "U3.CS", True),
-        ("net", "nets.3V3", "U3.VDD", True),
+        ("net", "nets.+3V3", "U3.VDD", True),
         ("net", "nets.GND", "U3.GND", True),
         ("constraint", "constraints[0]", "IMU_SCK", False),
         ("intent", "intent.U3", "IMU for balance control; read at 400 Hz", True),

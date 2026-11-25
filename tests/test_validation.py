@@ -158,6 +158,10 @@ CASES: dict[str, tuple[Mutator, Mutator]] = {
         lambda d: assign(d, "spi2", "mosi", "GPIO4", "X"),
         lambda d: (assign(d, "spi2", "mosi", "GPIO4"), d["nets"]["VCC"].append("U1.GPIO4")),
     ),
+    "supply-conflict": (
+        lambda d: d["nets"].update(GND=["U1.GND", "U2.GND"]),
+        lambda d: d["nets"]["VCC"].append("U1.GND"),
+    ),
     "firmware-mcu-board": (move_firmware_to_b, lambda d: d["components"]["U1"].update(board="b")),
     "unused-override": (
         chain(use("GPIO0"), override("U1.GPIO0", "strapping")),
@@ -219,6 +223,25 @@ def test_flag_exempt_when_used_for_protected_function() -> None:
     data = base()
     assign(data, "gpio", "io.led", "GPIO19", "LED")
     assert "flagged-pin" in codes(data)
+
+
+def test_supply_conflict_names_each_rail_and_its_pins() -> None:
+    data = base()
+    data["nets"]["VCC"].append("U1.GND")
+    [issue] = [
+        i
+        for i in validate(ProjectModel.model_validate(data), LIBRARY)
+        if i.code == "supply-conflict"
+    ]
+    assert issue.where == "nets.VCC"
+    assert issue.message == "net joins supply rails 3v3 (U1.3V3, U2.VDD) and gnd (U1.GND)"
+
+
+def test_power_pins_without_a_rail_are_not_checked() -> None:
+    data = base()
+    data["components"]["U4"] = {"part": "local/imu", "board": "a"}  # VDD and GND have no rail
+    data["nets"]["X"] = ["U4.VDD", "U4.GND"]
+    assert "supply-conflict" not in codes(data)
 
 
 def test_cross_board_net_is_allowed() -> None:

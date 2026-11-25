@@ -40,7 +40,10 @@ nets:
   LINK_MAIN_TX: [U1.GPIO17, U2.GPIO18]
   LINK_MOTOR_TX: [U2.GPIO17, U1.GPIO18]
   BOOT_MAIN: [U1.GPIO0]
-  3V3: [U1.3V3, U2.3V3, U3.VDD]
+  # Unlabelled in KiCad (EN RC networks); names derived by import.
+  AUTO(U1.EN): [U1.EN]
+  AUTO(U2.EN): [U2.EN]
+  +3V3: [U1.3V3, U2.3V3, U3.VDD]
   GND: [U1.GND, U2.GND, U3.GND]
 
 assignments:  # what each MCU pin is for

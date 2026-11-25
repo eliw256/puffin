@@ -8,3 +8,8 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+*#auto_saved_files#
+*ERC.rpt
+*.lck
+*-backups/
+*.kicad_prl

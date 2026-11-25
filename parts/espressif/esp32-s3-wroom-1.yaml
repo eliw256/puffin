@@ -17,10 +17,12 @@ pins:
     numbers: [1, 40, 41]
     datasheet_name: GND
     type: P
+    rail: gnd  # Table 3-1: GND, type P
   3V3:
     numbers: [2]
     datasheet_name: 3V3
     type: P
+    rail: "3v3"  # Table 3-1: 3V3, type P; Table 6-2: VDD33 3.0-3.6 V, typ 3.3 V
   EN:
     numbers: [3]
     datasheet_name: EN

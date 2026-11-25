@@ -119,3 +119,14 @@ def flow_seq(items: list[str]) -> CommentedSeq:
     seq = CommentedSeq(items)
     seq.fa.set_flow_style()
     return seq
+
+
+def rename_key(mapping: CommentedMap, old: str, new: str) -> None:
+    """Rename a key in place, keeping its position and its comments."""
+    position = list(mapping).index(old)
+    value = mapping[old]
+    record = mapping.ca.items.pop(old, None)
+    del mapping[old]
+    mapping.insert(position, new, value)
+    if record is not None:
+        mapping.ca.items[new] = record
