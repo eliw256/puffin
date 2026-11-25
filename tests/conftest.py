@@ -7,15 +7,19 @@ import pytest
 
 from puffin.core import Project
 
-EXAMPLE = Path(__file__).parents[1] / "examples" / "dual-esp32s3-robot" / "puffin.yaml"
+PROJECT = Path(__file__).parent / "fixtures" / "dual-esp32s3-robot" / "puffin.yaml"
+"""Frozen copy of the example project (IMU CS on GPIO10); the golden headers pair with it.
+
+Tests never read examples/: the example is free to change. See test_fixture_isolation.py.
+"""
 
 
 @pytest.fixture
 def example_path(tmp_path: Path) -> Path:
-    """A copy of the whole example (graph, schematic, netlist, sync state)."""
+    """A temp copy of the whole fixture project (graph, schematic, netlist, sync state)."""
     root = tmp_path / "example"
     shutil.copytree(
-        EXAMPLE.parent, root, ignore=shutil.ignore_patterns("fw", "*.lck", ".DS_Store", "*.rpt")
+        PROJECT.parent, root, ignore=shutil.ignore_patterns("fw", "*.lck", ".DS_Store", "*.rpt")
     )
     return root / "puffin.yaml"
 

@@ -1,8 +1,9 @@
 {
   "schematics": {
     "hw/robot/robot.kicad_sch": {
-      "sha256": "15d9318c228ec79d623e7d7aa073df956244e2a87839faed905c05922754c983"
+      "graph_sha256": "32332a5939ec25e2218a2b61dea6af06879e2fc509c824e344bc09c317749c8d",
+      "schematic_sha256": "21e92acb4762309c03d349001864be2e99f8dacdf43ade16473e7995689afb14"
     }
   },
-  "version": 1
+  "version": 2
 }

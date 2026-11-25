@@ -16,7 +16,7 @@ from puffin.generators import GENERATION_CODES, GenerationResult, generate
 from puffin.generators.espidf import _arrow, define_name
 from puffin.library import PartLibrary
 from puffin.library.loader import bundled_parts_dir
-from tests.conftest import EXAMPLE
+from tests.conftest import PROJECT
 
 GOLDEN = Path(__file__).parent / "golden" / "dual-esp32s3-robot"
 FIXTURE_LIBRARY = PartLibrary([Path(__file__).parent / "fixtures" / "parts", bundled_parts_dir()])
@@ -45,13 +45,13 @@ def edited(path: Path, *replacements: tuple[str, str], append: str = "") -> Proj
 
 @pytest.mark.parametrize("board", ["main", "motor"])
 def test_output_matches_golden(board: str) -> None:
-    result = run(Project.load(EXAMPLE))
+    result = run(Project.load(PROJECT))
     assert result.issues == []
     assert by_board(result)[board] == golden(board)
 
 
 def test_output_paths_and_format() -> None:
-    files = run(Project.load(EXAMPLE)).files
+    files = run(Project.load(PROJECT)).files
     assert [(f.board, f.path) for f in files] == [
         ("main", "fw/main/main/include/puffin_pins.h"),
         ("motor", "fw/motor/main/include/puffin_pins.h"),
@@ -77,7 +77,7 @@ def test_deterministic_across_fresh_processes() -> None:
     for seed in ("1", "2"):
         env = {**os.environ, "PYTHONHASHSEED": seed}
         done = subprocess.run(
-            [sys.executable, "-c", _SCRIPT, str(EXAMPLE)], capture_output=True, env=env, check=True
+            [sys.executable, "-c", _SCRIPT, str(PROJECT)], capture_output=True, env=env, check=True
         )
         outputs.append(done.stdout)
     assert outputs[0] == outputs[1]
@@ -161,7 +161,7 @@ def test_two_drivers_fall_back(example_path: Path) -> None:
 
 
 def test_power_nets_are_not_links() -> None:
-    text = by_board(run(Project.load(EXAMPLE)))["main"].decode()
+    text = by_board(run(Project.load(PROJECT)))["main"].decode()
     assert "3V3" not in text and "GND" not in text
 
 

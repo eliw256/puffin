@@ -7,8 +7,8 @@ ship an AI model. It gives whatever model you bring the project, the docs, and t
 judgment-heavy work, while deterministic code handles sync and every edit goes through the same
 validated API.
 
-Status: milestone M2 (core graph, validation, ESP-IDF pin headers, KiCad import). The MCP
-server and the UI come in later milestones.
+Status: milestone M3 (core graph, validation, ESP-IDF pin headers, KiCad import, MCP server).
+The web UI comes in a later milestone.
 
 ## Install
 
@@ -63,9 +63,39 @@ managed; everything else, such as resistors and buttons, stays out of the graph.
 components and nets; `puffin.yaml` keeps assignments, constraints, overrides, and intent. A pin
 that moves in KiCad carries its assignment along when the move is unambiguous. Pass `--yes` to
 apply without a prompt, `--netlist FILE` to use a pre-exported netlist, or `--json`. After an
-import that ran `kicad-cli`, `.puffin/state.json` records the schematic's hash so `puffin check`
-can warn when it may have changed since. A `--netlist` import never updates it, since the file
+import that ran `kicad-cli`, `.puffin/state.json` records hashes of the schematic and of the
+graph's managed connectivity, so `puffin check` can warn when either side has changed since. A `--netlist` import never updates it, since the file
 may not match the schematic.
+
+## Use it from an AI model (MCP)
+
+`puffin mcp` serves one project to your own model over MCP (stdio). With Claude Code:
+
+```bash
+claude mcp add puffin -- uv run puffin mcp examples/dual-esp32s3-robot
+```
+
+The model gets tools to read the graph (`get_project`, `query_pins`, `query_net`,
+`legal_pins`), read part data and datasheet extracts (`get_part`, `search_docs`,
+`read_doc_section`), run `check`, and change the project only through `propose_edit` or
+`propose_import_kicad`, then `apply_edit`, then `generate`. Every proposal comes with the
+`puffin.yaml` diff and the firmware header diff, and is refused as stale if the file changed in
+between. The server also sends a behavior contract: show the diff before applying, never edit
+generated files, and cite a doc section or project data for every electrical claim.
+Applied proposals are logged to `.puffin/history.jsonl` (gitignored).
+
+A pin move on a KiCad-managed net can also be written back to the schematic, when the pin
+connects through one label (directly or on a short wire stub) and the target pin is free:
+
+```bash
+uv run puffin move-pin U1 GPIO10 GPIO4 --writeback --path examples/dual-esp32s3-robot
+```
+
+Puffin shows both diffs, verifies the edited schematic with `kicad-cli` before anything is
+written, and refuses while KiCad has the schematic open. Review the result in KiCad, then run
+`puffin writeback confirm` (or `puffin writeback restore` to undo every unconfirmed write-back).
+See [docs/WRITEBACK.md](docs/WRITEBACK.md). See
+[docs/M3_MCP.md](docs/M3_MCP.md) for the full tool surface.
 
 ## Learn more
 

@@ -12,7 +12,7 @@ from puffin.cli.main import main
 from puffin.core import Project
 from puffin.generators import generate
 from puffin.kicad.export import find_kicad_cli
-from puffin.kicad.state import STATE_PATH, schematic_hash
+from puffin.kicad.state import STATE_PATH, graph_hash, schematic_hash
 from tests.test_kicad_changes import SCK_U1, SCK_U3, edited, node, resistor
 
 SCHEMATIC = "hw/robot/robot.kicad_sch"
@@ -59,7 +59,9 @@ def test_moved_sck_end_to_end(example_path: Path, capsys: pytest.CaptureFixture[
     assert "  IMU_SCK: [U1.GPIO14, U3.SCK]\n" in example_path.read_text()
 
     assert main(["check", str(example_path)]) == 0
-    assert "0 error(s), 0 warning(s)" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    # A --netlist import is not a sync, so the graph now differs from the last recorded one.
+    assert "0 error(s), 1 warning(s)" in out and "warning[graph-drift]" in out
 
     after = header(example_path)
     changed = [(a, b) for a, b in zip(before, after, strict=True) if a != b]
@@ -201,8 +203,9 @@ def test_kicad_cli_export_records_state_but_dry_run_never_does(
     assert not state.exists()
     assert kicad(example_path) == 0  # in sync: no --yes needed, nothing to apply
     assert "in sync" in capsys.readouterr().out
-    recorded = json.loads(state.read_text())["schematics"][SCHEMATIC]["sha256"]
-    assert recorded == schematic_hash(example_path.parent, SCHEMATIC)
+    recorded = json.loads(state.read_text())["schematics"][SCHEMATIC]
+    assert recorded["schematic_sha256"] == schematic_hash(example_path.parent, SCHEMATIC)
+    assert recorded["graph_sha256"] == graph_hash(Project.load(example_path).model, SCHEMATIC)
 
 
 def test_kicad_cli_apply_records_state(
@@ -231,19 +234,79 @@ def test_netlist_in_sync_leaves_state_alone(
     assert not state.exists()
 
 
-def test_netlist_import_does_not_fake_a_sync(
+def test_netlist_import_that_changes_nets_warns_graph_drift(
     example_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    drift(example_path)
     state_before = (example_path.parent / STATE_PATH).read_bytes()
     assert run(example_path, edited((SCK_U1, node("U1", "22", "IO14"))), "--yes") == 0
     captured = capsys.readouterr()
     assert "applied 2 operation(s)" in captured.out
     assert "drift state (.puffin/state.json) was not updated" in captured.err
-    assert "GPIO14" in example_path.read_text()
     assert (example_path.parent / STATE_PATH).read_bytes() == state_before
     main(["check", str(example_path)])
-    assert "warning[schematic-drift]" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "warning[graph-drift]" in out
+    assert (
+        "puffin.yaml connectivity differs from the last KiCad sync (KiCad wins on next import)"
+        in out
+    )
+    assert "schematic-drift" not in out
+
+
+def test_netlist_import_with_edited_schematic_warns_both(
+    example_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    drift(example_path)
+    assert run(example_path, edited((SCK_U1, node("U1", "22", "IO14"))), "--yes") == 0
+    capsys.readouterr()
+    main(["check", str(example_path)])
+    out = capsys.readouterr().out
+    assert "warning[schematic-drift]" in out and "warning[graph-drift]" in out
+
+
+def test_hand_edited_net_warns_graph_drift(
+    example_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    project = Project.load(example_path)
+    assert project.connect("BOOT_MAIN", "U1.GPIO4").ok
+    project.save()
+    main(["check", str(example_path)])
+    assert "warning[graph-drift]" in capsys.readouterr().out
+
+
+def test_graph_owned_edits_are_not_drift(
+    example_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    project = Project.load(example_path)
+    assert project.add_override("U1.GPIO10", "strapping", "test").ok
+    assert project.unassign_pin("U1", "gpio", "io.boot_button").ok
+    project.save()
+    main(["check", str(example_path)])
+    assert "drift" not in capsys.readouterr().out
+
+
+def test_real_sync_after_drift_is_clean(
+    example_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    variant = edited((SCK_U1, node("U1", "22", "IO14")))
+    assert run(example_path, variant, "--yes") == 0  # --netlist: graph drifts
+    drift(example_path)  # and the schematic changes too
+    fake_kicad_cli(monkeypatch, variant)
+    assert kicad(example_path) == 0  # already matches: in sync, records both sides
+    capsys.readouterr()
+    assert main(["check", str(example_path)]) == 0
+    assert "0 error(s), 0 warning(s)" in capsys.readouterr().out
+
+
+def test_state_from_older_puffin_asks_for_a_sync(
+    example_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    state = example_path.parent / STATE_PATH
+    entry = {"sha256": schematic_hash(example_path.parent, SCHEMATIC)}
+    state.write_text(json.dumps({"version": 1, "schematics": {SCHEMATIC: entry}}))
+    main(["check", str(example_path)])
+    out = capsys.readouterr().out
+    assert "warning[schematic-unsynced]" in out and "no recorded KiCad sync" in out
 
 
 def test_netlist_requires_a_single_schematic(
@@ -304,7 +367,7 @@ def test_edited_schematic_warns_drift(
     path = schematic(example_path)
     path.write_bytes(path.read_bytes().replace(b'"U3"', b'"U3"  ', 1))
     out = check_codes(example_path, capsys)
-    assert "warning[schematic-drift]" in out and "may have changed" in out
+    assert "warning[schematic-drift]" in out and "schematic changed since last import" in out
     assert "0 error(s), 1 warning(s)" in out
 
 

@@ -5,11 +5,11 @@ from pathlib import Path
 import pytest
 
 from puffin.core import Project, ProjectLoadError, yamlio
-from tests.conftest import EXAMPLE
+from tests.conftest import PROJECT
 
 
 def test_example_is_clean() -> None:
-    assert Project.load(EXAMPLE).check() == []
+    assert Project.load(PROJECT).check() == []
 
 
 def test_save_is_byte_identical(example_path: Path) -> None:
@@ -20,7 +20,7 @@ def test_save_is_byte_identical(example_path: Path) -> None:
 
 
 def test_serializer_itself_round_trips_example() -> None:
-    original = EXAMPLE.read_bytes()
+    original = PROJECT.read_bytes()
     assert yamlio.dump(yamlio.parse(original)) == original
 
 

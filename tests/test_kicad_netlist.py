@@ -7,9 +7,9 @@ import pytest
 from puffin.kicad import NetlistError, Node, map_pin, read_netlist
 from puffin.kicad.sexpr import SExprError, parse
 from puffin.library import PartDefinition, PartLibrary
-from tests.conftest import EXAMPLE
+from tests.conftest import PROJECT
 
-FIXTURE = EXAMPLE.parent / "hw" / "robot" / "robot.net"
+FIXTURE = PROJECT.parent / "hw" / "robot" / "robot.net"
 LIBRARY = PartLibrary()
 
 
