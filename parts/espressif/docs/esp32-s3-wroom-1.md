@@ -65,3 +65,5 @@ Extracted from the ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1.
 ## Supply (Table 6-2)
 
 VDD33: 3.0 V min, 3.3 V typical, 3.6 V max.
+
+Rails in the part file: GND (pins 1, 40, 41) is `gnd`; 3V3 (pin 2) is `3v3`.

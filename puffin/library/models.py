@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class _PartModel(BaseModel):
@@ -17,12 +18,32 @@ class Supply(_PartModel):
     max_v: float | None = None
 
 
+_RAIL = re.compile(r"^[a-z0-9][a-z0-9_.+-]*$")
+
+
 class PartPin(_PartModel):
+    """One pin. `rail` names the supply a power pin (`type: P`) belongs to.
+
+    Rails are short lowercase names compared as plain strings: `gnd` for ground, and the
+    nominal voltage for a supply (`"3v3"`, `"1v8"`, `"5v"`). Two power pins with different
+    rails on one net is a `supply-conflict` error; power pins without a rail are not checked.
+    """
+
     numbers: list[int] = Field(default_factory=list)
     datasheet_name: str | None = None
     type: str | None = None
+    rail: str | None = None
     functions: list[str] = Field(default_factory=list)
     flags: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _rail_on_power_pins_only(self) -> PartPin:
+        if self.rail is not None:
+            if self.type != "P":
+                raise ValueError("rail is only allowed on power pins (type: P)")
+            if not _RAIL.match(self.rail):
+                raise ValueError(f"rail '{self.rail}' must be lowercase, e.g. gnd or 3v3")
+        return self
 
     @property
     def is_power(self) -> bool:

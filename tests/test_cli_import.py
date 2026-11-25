@@ -120,6 +120,28 @@ def test_series_passive_warning(example_path: Path, capsys: pytest.CaptureFixtur
     assert "Device:R x4" in out
 
 
+def test_ground_merged_into_supply_is_rejected(
+    example_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    lines = (example_path.parent / "hw" / "robot" / "robot.net").read_text().split("\n")
+    gnd = lines.index('    (net (code "9") (name "GND") (class "Default")')
+    end = next(i for i in range(gnd + 1, len(lines)) if lines[i].startswith("    (net "))
+    gnd_nodes = [line.rstrip(")") + "))" for line in lines[gnd + 1 : end]]
+    del lines[gnd:end]
+    supply = lines.index('    (net (code "1") (name "+3V3") (class "Default")')
+    last = next(i for i in range(supply + 1, len(lines)) if lines[i].startswith("    (net ")) - 1
+    lines[last] = lines[last].removesuffix(")")  # reopen +3V3, append GND's nodes, close
+    lines[last + 1 : last + 1] = [*gnd_nodes[:-1], gnd_nodes[-1] + ")"]
+    text = "\n".join(lines)
+    before = example_path.read_bytes()
+
+    assert run(example_path, text, "--yes") == 1
+    out = capsys.readouterr().out
+    assert "- GND [" in out
+    assert "error[supply-conflict] nets.+3V3: net joins supply rails 3v3 (" in out
+    assert example_path.read_bytes() == before
+
+
 # --- review flow --------------------------------------------------------------------------
 
 

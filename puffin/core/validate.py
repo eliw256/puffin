@@ -19,6 +19,7 @@ RULES: dict[str, Severity] = {
     "pin-net-conflict": Severity.ERROR,
     "signal-on-power-net": Severity.ERROR,
     "signals-shorted": Severity.ERROR,
+    "supply-conflict": Severity.ERROR,
     "unknown-board": Severity.ERROR,
     "unknown-component": Severity.ERROR,
     "unknown-net": Severity.ERROR,
@@ -169,6 +170,8 @@ class _Validator:
         for net, endpoints in self.project.nets.items():
             for endpoint in endpoints:
                 self.known_pin(endpoint, f"nets.{net}")
+        for net, endpoints in self.project.nets.items():
+            self.check_supply(net, endpoints)
         for endpoint, nets in self.nets_by_pin.items():
             if len(nets) > 1:
                 names = ", ".join(sorted(nets))
@@ -178,6 +181,26 @@ class _Validator:
                     f"pin is on multiple nets: {names}",
                     "disconnect it from all but one net",
                 )
+
+    def check_supply(self, net: str, endpoints: list[str]) -> None:
+        """A net may carry at most one supply rail; power pins without a rail are skipped."""
+        rails: dict[str, list[str]] = defaultdict(list)
+        for endpoint in dict.fromkeys(endpoints):
+            ref, pin = split_endpoint(endpoint)
+            part = self.parts.get(ref)
+            definition = part.pins.get(pin) if part else None
+            if definition is not None and definition.is_power and definition.rail:
+                rails[definition.rail].append(endpoint)
+        if len(rails) > 1:
+            joined = " and ".join(
+                f"{rail} ({', '.join(pins)})" for rail, pins in sorted(rails.items())
+            )
+            self.add(
+                "supply-conflict",
+                f"nets.{net}",
+                f"net joins supply rails {joined}",
+                "split the net: each supply rail, ground included, needs its own net",
+            )
 
     def check_assignments(self) -> None:
         by_pin: dict[str, list[_Assignment]] = defaultdict(list)
