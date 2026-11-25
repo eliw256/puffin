@@ -234,7 +234,8 @@ Source: the "Puffin" mood board — a palette drawn from Atlantic puffins and Fl
 
 Rules:
 - Red and orange are semantic (error / warning). Don't use them decoratively anywhere status could be confused.
-- The pin map needs ~8–10 distinguishable function colors. Derive them from this palette with consistent lightness, verify contrast (WCAG AA for text), and never rely on color alone — add labels/patterns for flagged pins.
+- The pin map needs ~8–10 distinguishable function categories. Build them only from the palette colors above, excluding red and orange, and from **ordered (Bayer) dither mixes** of two of them. Each category gets a distinct pattern, so categories stay distinguishable in greyscale. Never rely on color alone: every pin has its label, and flagged pins get a pattern or icon.
+- **Dithering as a fill texture (ordered/Bayer only):** allowed for categorical swatches (pin stubs, a strip on a tag, legend chips). It is rendered in screen pixels, pixel-aligned at every zoom level (`image-rendering: pixelated` or equivalent), so there's no moiré. Text never sits on a dithered area; labels stay on solid palette colors and meet WCAG AA. Never dither diffs or diagrams. Floyd–Steinberg is not used for fills: it produces artifacts on flat areas.
 - **Floyd–Steinberg dithering** is the illustration texture: splash screen, empty states, part thumbnails, chip illustrations, about page. Do **not** dither data-bearing UI (pin labels, diagrams, diffs) — legibility first.
 - Dark theme is the default. Typography: a clean grotesk for UI, a monospace for pins/nets/code.
 

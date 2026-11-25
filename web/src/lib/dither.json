@@ -1,0 +1,29 @@
+{
+  "note": "Family swatches: only these PUFFIN_SPEC §7 colours and ordered (Bayer 4x4) mixes of two of them. Red and orange are reserved for errors and warnings and never appear here.",
+  "colors": {
+    "bg": "#282226",
+    "surface": "#303545",
+    "blue": "#31447C",
+    "cream": "#F5DBA0",
+    "bone": "#D8D2C8"
+  },
+  "reserved": { "error": "#E72B00", "warning": "#EC8F00" },
+  "bayer4": [
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5]
+  ],
+  "ratios": [0.25, 0.5, 0.75],
+  "families_status": "provisional: replace with the picks from the swatch sheet",
+  "families": {
+    "gpio": { "a": "blue", "b": "bone", "ratio": 0.5 },
+    "spi": { "a": "blue", "b": "cream", "ratio": 0.75 },
+    "i2c": { "a": "blue", "b": "cream", "ratio": 0.25 },
+    "uart": { "a": "surface", "b": "cream", "ratio": 0.5 },
+    "adc": { "a": "surface", "b": "bone", "ratio": 0.75 },
+    "usb": { "a": "bg", "b": "cream", "ratio": 0.5 },
+    "power": { "a": "cream", "b": null, "ratio": 0 },
+    "ground": { "a": "bg", "b": "bone", "ratio": 0.25 }
+  }
+}

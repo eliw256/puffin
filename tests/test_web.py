@@ -142,3 +142,56 @@ def test_symbol_graphics_matches_placed_pins() -> None:
     assert hidden == ["40", "41"]  # stacked GND pads
     assert view["shapes"][0] == {"kind": "rect", "x": -12.7, "y": -25.4, "w": 25.4, "h": 50.8}  # type: ignore[index]
     assert view["skipped"] == []
+
+
+# --- dither swatches (spec §7: §7 colours and ordered mixes only) ---------------------------
+
+DITHER = WEB / "src" / "lib" / "dither.json"
+
+
+def dither() -> dict:  # type: ignore[type-arg]
+    import json
+
+    return json.loads(DITHER.read_text())  # type: ignore[no-any-return]
+
+
+def test_dither_colours_are_the_spec_palette_minus_red_and_orange() -> None:
+    spec = (Path(__file__).parents[1] / "PUFFIN_SPEC.md").read_text().split("## 7.", 1)[1]
+    spec_hex = {h.lower() for h in re.findall(r"`(#[0-9A-Fa-f]{6})`", spec.split("Rules:", 1)[0])}
+    colors = {v.lower() for v in dither()["colors"].values()}
+    reserved = {v.lower() for v in dither()["reserved"].values()}
+    assert colors <= spec_hex
+    assert reserved == {"#e72b00", "#ec8f00"}
+    assert not colors & reserved
+    assert colors == spec_hex - reserved
+
+
+def test_bayer_matrix_is_a_4x4_ordered_threshold_map() -> None:
+    matrix = dither()["bayer4"]
+    assert sorted(v for row in matrix for v in row) == list(range(16))
+    assert matrix[0][0] == 0 and matrix[1][1] == 4  # the standard recursive Bayer layout
+
+
+def test_family_swatches_use_only_palette_colours_and_allowed_ratios() -> None:
+    data = dither()
+    for family, swatch in data["families"].items():
+        assert swatch["a"] in data["colors"], family
+        if swatch["b"] is None:
+            assert swatch["ratio"] == 0, family
+        else:
+            assert swatch["b"] in data["colors"] and swatch["b"] != swatch["a"], family
+            assert swatch["ratio"] in data["ratios"], family
+
+
+def test_every_family_has_a_distinct_pattern() -> None:
+    def key(s: dict) -> tuple:  # type: ignore[type-arg]
+        if s["b"] is None:
+            return (s["a"],)
+        pair = sorted([(s["a"], 1 - s["ratio"]), (s["b"], s["ratio"])])
+        return tuple(pair)
+
+    keys = [key(s) for s in dither()["families"].values()]
+    assert len(keys) == len(set(keys))
+    assert set(dither()["families"]) == {
+        "gpio", "spi", "i2c", "uart", "adc", "usb", "power", "ground",
+    }  # fmt: skip
