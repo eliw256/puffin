@@ -15,7 +15,7 @@
 
 /*
  * Cross-board links (nets shared with another board's MCU).
- * Arrows point from the driving signal to the receiving one; <-> if neither drives.
+ * -> / <- point from the driving signal to the receiving one; <-> means direction unknown or both sides drive.
  * LINK_MAIN_TX: U2.GPIO18 (uart1.rx) <- main U1.GPIO17 (uart1.tx)
  * LINK_MOTOR_TX: U2.GPIO17 (uart1.tx) -> main U1.GPIO18 (uart1.rx)
  */

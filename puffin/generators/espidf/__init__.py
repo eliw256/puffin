@@ -186,8 +186,8 @@ class EspIdfGenerator:
                 "",
                 "/*",
                 " * Cross-board links (nets shared with another board's MCU).",
-                " * Arrows point from the driving signal to the receiving one;"
-                " <-> if neither drives.",
+                " * -> / <- point from the driving signal to the receiving one;"
+                " <-> means direction unknown or both sides drive.",
                 *(f" * {link}" for link in links),
                 " */",
             ]

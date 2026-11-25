@@ -28,4 +28,5 @@ Resolutions of the open decisions in `PUFFIN_SPEC.md` §11, confirmed 2026-11-23
 - ESP-IDF headers include `hal/gpio_types.h` rather than `driver/gpio.h`: lighter,
   chip-independent, and path-stable.
 - Cross-board link arrows follow signal direction: `->` when this board's pin drives the other,
-  `<-` when it receives, `<->` when neither side drives (for example I2C or a plain GPIO).
+  `<-` when it receives, and `<->` when either direction is unknown or both sides drive.
+  Directions come from part data (`peripherals.<p>.signals`).
