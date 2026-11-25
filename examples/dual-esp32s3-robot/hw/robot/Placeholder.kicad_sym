@@ -49,6 +49,33 @@
 				(hide yes)
 			)
 		)
+		(property "Puffin_Part" "example/spi-imu"
+			(at 8.128 -16.764 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Puffin_Board" "main"
+			(at 8.382 -18.796 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Puffin_Variant" ""
+			(at 0 0 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(symbol "IMU_Placeholder_0_1"
 			(rectangle
 				(start 2.54 0)

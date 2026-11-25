@@ -13,3 +13,4 @@ build/
 *.lck
 *-backups/
 *.kicad_prl
+*.bak
