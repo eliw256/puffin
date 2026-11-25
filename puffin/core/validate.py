@@ -10,13 +10,15 @@ from puffin.core.models import ProjectModel, split_endpoint
 from puffin.library import PartDefinition, PartLibrary, PartLoadError
 
 RULES: dict[str, Severity] = {
-    "assignment-net-mismatch": Severity.ERROR,
+    "assignment-unconnected": Severity.ERROR,
     "firmware-mcu-board": Severity.ERROR,
     "flagged-pin": Severity.ERROR,
     "invalid-part": Severity.ERROR,
     "pin-double-assigned": Severity.ERROR,
     "pin-function": Severity.ERROR,
     "pin-net-conflict": Severity.ERROR,
+    "signal-on-power-net": Severity.ERROR,
+    "signals-shorted": Severity.ERROR,
     "unknown-board": Severity.ERROR,
     "unknown-component": Severity.ERROR,
     "unknown-net": Severity.ERROR,
@@ -202,7 +204,7 @@ class _Validator:
             nets = self.nets_by_pin.get(item.endpoint, [])
             if not nets:
                 self.add(
-                    "assignment-net-mismatch",
+                    "assignment-unconnected",
                     item.where,
                     f"{item.name} is assigned to {item.pin}, but {item.endpoint} is on no net",
                     f"connect {item.endpoint} to a net or move the assignment to the connected pin",
@@ -224,7 +226,7 @@ class _Validator:
             if len({i.endpoint for i in items}) > 1:
                 names = ", ".join(sorted(f"{i.name} ({i.endpoint})" for i in items))
                 self.add(
-                    "assignment-net-mismatch",
+                    "signals-shorted",
                     f"nets.{net}",
                     f"different assigned signals are shorted together: {names}",
                     "split the net or correct the assignments",
@@ -266,7 +268,7 @@ class _Validator:
             definition = part.pins.get(pin) if part else None
             if definition is not None and definition.is_power:
                 self.add(
-                    "assignment-net-mismatch",
+                    "signal-on-power-net",
                     item.where,
                     f"{item.name} on {item.endpoint} shares net '{net}' with power pin {endpoint}",
                     "move the signal off the power net",

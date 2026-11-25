@@ -92,7 +92,7 @@ def test_connect_rejects_bad_input(project: Project) -> None:
 def test_disconnect_assigned_pin_is_rejected(project: Project) -> None:
     result = project.disconnect("IMU_CS", "U1.GPIO10")
     assert not result.ok
-    assert "assignment-net-mismatch" in {issue.code for issue in result.errors}
+    assert "assignment-unconnected" in {issue.code for issue in result.errors}
 
 
 def test_assign_and_unassign(project: Project) -> None:
@@ -112,7 +112,7 @@ def test_assign_rejects_illegal_function_and_unconnected_pin(project: Project) -
     illegal = project.assign_pin("U1", "adc1", "ch3", "GPIO5")
     assert {issue.code for issue in illegal.errors} == {"pin-function"}
     unconnected = project.assign_pin("U1", "gpio", "io.led", "GPIO6")
-    assert {issue.code for issue in unconnected.errors} == {"assignment-net-mismatch"}
+    assert {issue.code for issue in unconnected.errors} == {"assignment-unconnected"}
 
 
 def test_override_unblocks_flagged_pin(project: Project) -> None:
@@ -148,7 +148,7 @@ def test_two_mcus_may_share_a_net_but_one_mcu_may_not_short_signals(project: Pro
     assert project.connect("LINK_MAIN_TX", "U1.GPIO4").ok
     result = project.assign_pin("U1", "gpio", "io.extra", "GPIO4")
     assert not result.ok
-    assert {issue.code for issue in result.errors} == {"assignment-net-mismatch"}
+    assert {issue.code for issue in result.errors} == {"signals-shorted"}
 
 
 def test_edit_can_fix_one_error_while_another_remains(tmp_path: Path, example_path: Path) -> None:
@@ -158,11 +158,11 @@ def test_edit_can_fix_one_error_while_another_remains(tmp_path: Path, example_pa
     text = text.replace("IMU_MISO: [U1.GPIO13, U3.SDO]", "IMU_MISO: [U1.GPIO14, U3.SDO]")
     example_path.write_text(text)
     project = Project.load(example_path)
-    assert len([i for i in project.check() if i.code == "assignment-net-mismatch"]) == 2
+    assert len([i for i in project.check() if i.code == "assignment-unconnected"]) == 2
     result = project.disconnect("IMU_CS", "U1.GPIO9")
     assert result.ok
     assert project.connect("IMU_CS", "U1.GPIO10").ok
-    assert len([i for i in project.check() if i.code == "assignment-net-mismatch"]) == 1
+    assert len([i for i in project.check() if i.code == "assignment-unconnected"]) == 1
 
 
 def test_edit_save_reload_preserves_comments(project: Project, example_path: Path) -> None:

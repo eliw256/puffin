@@ -76,6 +76,20 @@ def use(pin: str) -> Mutator:
     return lambda d: d["nets"].__setitem__("X", [f"U1.{pin}"])
 
 
+def short_sck_and_cs(data: Data) -> None:
+    """Two assigned signals of one MCU end up on the same net."""
+    data["nets"]["SCK"].append("U1.GPIO10")
+    del data["nets"]["CS"]
+
+
+def link_two_mcus(data: Data) -> None:
+    """Assigned signals of two different MCUs on one net are a normal link."""
+    data["components"]["U3"] = {"part": WROOM, "board": "b", "variant": "N8"}
+    data["nets"]["LINK"] = ["U1.GPIO17", "U3.GPIO18"]
+    assign(data, "uart1", "tx", "GPIO17")
+    data["assignments"]["U3"] = {"uart1": {"rx": "GPIO18"}}
+
+
 def set_invalid_part(data: Data) -> None:
     data["components"]["U2"]["part"] = "bad/part"
 
@@ -108,7 +122,12 @@ CASES: dict[str, tuple[Mutator, Mutator]] = {
     ),
     "pin-double-assigned": (noop, lambda d: assign(d, "spi2", "mosi", "GPIO12")),
     "flagged-pin": (chain(use("GPIO0"), override("U1.GPIO0", "strapping")), use("GPIO0")),
-    "assignment-net-mismatch": (noop, lambda d: d["nets"].update(SCK=["U1.GPIO14", "U2.SCK"])),
+    "assignment-unconnected": (noop, lambda d: d["nets"].update(SCK=["U1.GPIO14", "U2.SCK"])),
+    "signals-shorted": (link_two_mcus, short_sck_and_cs),
+    "signal-on-power-net": (
+        lambda d: assign(d, "spi2", "mosi", "GPIO4", "X"),
+        lambda d: (assign(d, "spi2", "mosi", "GPIO4"), d["nets"]["VCC"].append("U1.GPIO4")),
+    ),
     "firmware-mcu-board": (noop, lambda d: d["components"]["U1"].update(board="b")),
     "unused-override": (
         chain(use("GPIO0"), override("U1.GPIO0", "strapping")),
@@ -170,20 +189,6 @@ def test_flag_exempt_when_used_for_protected_function() -> None:
     data = base()
     assign(data, "gpio", "io.led", "GPIO19", "LED")
     assert "flagged-pin" in codes(data)
-
-
-def test_signals_shorted_on_one_net_are_a_mismatch() -> None:
-    data = base()
-    data["nets"]["SCK"].append("U1.GPIO10")
-    del data["nets"]["CS"]
-    assert "assignment-net-mismatch" in codes(data)
-
-
-def test_signal_on_power_net_is_a_mismatch() -> None:
-    data = base()
-    assign(data, "spi2", "mosi", "GPIO4")
-    data["nets"]["VCC"].append("U1.GPIO4")
-    assert "assignment-net-mismatch" in codes(data)
 
 
 def test_cross_board_net_is_allowed() -> None:

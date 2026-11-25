@@ -21,7 +21,7 @@ def test_check_reports_errors(example_path: Path, capsys: pytest.CaptureFixture[
     example_path.write_text(example_path.read_text().replace("cs.imu: GPIO10", "cs.imu: GPIO9"))
     assert main(["check", str(example_path)]) == 1
     output = capsys.readouterr().out
-    assert "assignment-net-mismatch" in output and "fix:" in output
+    assert "assignment-unconnected" in output and "fix:" in output
 
 
 def test_check_json(example_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
