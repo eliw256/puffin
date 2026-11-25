@@ -7,8 +7,8 @@ ship an AI model. It gives whatever model you bring the project, the docs, and t
 judgment-heavy work, while deterministic code handles sync and every edit goes through the same
 validated API.
 
-Status: milestone M0 (core graph, validation, CLI). Firmware generation, KiCad import, the MCP
-server, and the UI come in later milestones.
+Status: milestone M2 (core graph, validation, ESP-IDF pin headers, KiCad import). The MCP
+server and the UI come in later milestones.
 
 ## Install
 
@@ -43,10 +43,34 @@ uv run puffin show examples/dual-esp32s3-robot --board main
 
 Both commands accept `--json` for machine-readable output.
 
+Generate each board's firmware pin header (`--check` reports stale files, `--dry-run` shows the
+diff):
+
+```bash
+uv run puffin gen examples/dual-esp32s3-robot
+```
+
+Bring KiCad schematic changes into the graph. Puffin exports a netlist with `kicad-cli` (found
+via `$PUFFIN_KICAD_CLI`, `PATH`, or the macOS app bundle), shows the change set, and applies it
+only after you confirm:
+
+```bash
+uv run puffin import kicad examples/dual-esp32s3-robot --dry-run
+```
+
+Symbols with a `Puffin_Part` field (plus `Puffin_Board`, and optionally `Puffin_Variant`) are
+managed; everything else, such as resistors and buttons, stays out of the graph. KiCad decides
+components and nets; `puffin.yaml` keeps assignments, constraints, overrides, and intent. A pin
+that moves in KiCad carries its assignment along when the move is unambiguous. Pass `--yes` to
+apply without a prompt, `--netlist FILE` to use a pre-exported netlist, or `--json`. After an
+import, `.puffin/state.json` records the schematic's hash so `puffin check` can warn when it may
+have changed since.
+
 ## Learn more
 
 - [PUFFIN_SPEC.md](PUFFIN_SPEC.md): product thesis, design rules, data model, and milestones.
-- [docs/DECISIONS.md](docs/DECISIONS.md): resolved design decisions and M0 modelling choices.
+- [docs/DECISIONS.md](docs/DECISIONS.md): resolved design decisions and modelling choices.
+- [docs/M2_IMPORT.md](docs/M2_IMPORT.md): how KiCad import matches components and nets.
 
 ## License
 

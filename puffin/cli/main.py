@@ -9,10 +9,11 @@ from collections.abc import Sequence
 from typing import Any
 
 from puffin import __version__
-from puffin.cli import gen
-from puffin.core import Issue, Project, ProjectLoadError, ProjectModel, Severity
+from puffin.cli import gen, importer
+from puffin.core import Issue, Project, ProjectLoadError, ProjectModel, Severity, sort_issues
 from puffin.core.models import split_endpoint
 from puffin.generators import check_generation
+from puffin.kicad.state import drift_issues
 
 
 def _counts(issues: list[Issue]) -> tuple[int, int]:
@@ -21,7 +22,7 @@ def _counts(issues: list[Issue]) -> tuple[int, int]:
 
 
 def cmd_check(project: Project, args: argparse.Namespace) -> int:
-    issues = project.check()
+    issues = sort_issues([*project.check(), *drift_issues(project.path.parent, project.model)])
     errors, warnings = _counts(issues)
     if args.json:
         payload = {
@@ -121,6 +122,7 @@ def build_parser() -> argparse.ArgumentParser:
     show.set_defaults(func=cmd_show)
 
     gen.add_parser(commands)
+    importer.add_parser(commands)
     return parser
 
 

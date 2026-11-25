@@ -12,9 +12,12 @@ EXAMPLE = Path(__file__).parents[1] / "examples" / "dual-esp32s3-robot" / "puffi
 
 @pytest.fixture
 def example_path(tmp_path: Path) -> Path:
-    target = tmp_path / "puffin.yaml"
-    shutil.copy(EXAMPLE, target)
-    return target
+    """A copy of the whole example (graph, schematic, netlist, sync state)."""
+    root = tmp_path / "example"
+    shutil.copytree(
+        EXAMPLE.parent, root, ignore=shutil.ignore_patterns("fw", "*.lck", ".DS_Store", "*.rpt")
+    )
+    return root / "puffin.yaml"
 
 
 @pytest.fixture
