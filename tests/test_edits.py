@@ -62,17 +62,19 @@ def test_add_component_rejects_unknown_part_and_duplicate(project: Project) -> N
 
 
 def test_references_lists_every_kind_in_file_order(project: Project) -> None:
-    imu = [(r.kind, r.where, r.detail) for r in project.references("U3")]
+    imu = [(r.kind, r.where, r.detail, r.blocking) for r in project.references("U3")]
     assert imu == [
-        ("net", "nets.IMU_SCK", "U3.SCK"),
-        ("net", "nets.IMU_MOSI", "U3.SDI"),
-        ("net", "nets.IMU_MISO", "U3.SDO"),
-        ("net", "nets.IMU_CS", "U3.CS"),
-        ("net", "nets.3V3", "U3.VDD"),
-        ("net", "nets.GND", "U3.GND"),
-        ("constraint", "constraints[0]", "IMU_SCK"),
-        ("intent", "intent.U3", "IMU for balance control; read at 400 Hz"),
+        ("net", "nets.IMU_SCK", "U3.SCK", True),
+        ("net", "nets.IMU_MOSI", "U3.SDI", True),
+        ("net", "nets.IMU_MISO", "U3.SDO", True),
+        ("net", "nets.IMU_CS", "U3.CS", True),
+        ("net", "nets.3V3", "U3.VDD", True),
+        ("net", "nets.GND", "U3.GND", True),
+        ("constraint", "constraints[0]", "IMU_SCK", False),
+        ("intent", "intent.U3", "IMU for balance control; read at 400 Hz", True),
     ]
+    informational = [r.kind for r in project.references("U1") if not r.blocking]
+    assert informational == ["constraint"]
     kinds = [r.kind for r in project.references("U1")]
     assert kinds.count("assignment") == 7
     assert {"net", "override", "firmware"} <= set(kinds)
@@ -99,10 +101,11 @@ def test_remove_component_in_use_lists_blockers(project: Project) -> None:
     assert not result.ok and not result.applied
     [issue] = result.errors
     assert issue.code == "edit-rejected"
-    assert "8 place(s)" in issue.message
-    assert "nets.IMU_SCK (U3.SCK)" in issue.hint
-    assert "constraints[0] (IMU_SCK)" in issue.hint
-    assert "intent.U3" in issue.hint
+    assert "7 place(s)" in issue.message
+    blockers, note = issue.hint.split("\n")
+    assert blockers.startswith("remove these references first: nets.IMU_SCK (U3.SCK);")
+    assert "intent.U3" in blockers and "constraints" not in blockers
+    assert note == "note: also affected, no change required: constraints[0] (IMU_SCK)"
     assert project.dumps() == before
 
 
@@ -116,7 +119,7 @@ def test_intent_alone_blocks_removal(example_path: Path) -> None:
     assert project.check() == []
     result = project.remove_component("U4")
     assert not result.ok
-    assert "intent.U4 (spare)" in result.errors[0].hint
+    assert result.errors[0].hint == "remove these references first: intent.U4 (spare)"
 
 
 def test_removing_last_entries_restores_original_bytes(project: Project) -> None:

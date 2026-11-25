@@ -39,9 +39,15 @@ class Reference:
     kind: str  # net | assignment | override | constraint | intent | firmware
     where: str
     detail: str
+    blocking: bool = True  # False: informational; removal does not require changing it
 
-    def to_dict(self) -> dict[str, str]:
-        return {"kind": self.kind, "where": self.where, "detail": self.detail}
+    def to_dict(self) -> dict[str, str | bool]:
+        return {
+            "kind": self.kind,
+            "where": self.where,
+            "detail": self.detail,
+            "blocking": self.blocking,
+        }
 
     def __str__(self) -> str:
         return f"{self.where} ({self.detail})"
@@ -135,7 +141,8 @@ class Project:
         """Every entry that points at component `ref`, in file order. Read-only.
 
         Constraints name nets, not components, so a constraint is listed when its net
-        includes one of the component's pins.
+        includes one of the component's pins. It is informational (blocking=False): other
+        components may still be on that net. Every other kind blocks removal.
         """
         model = self.model
         found: list[Reference] = []
@@ -155,7 +162,8 @@ class Project:
                 found.append(Reference("override", f"overrides[{index}]", detail))
         for index, constraint in enumerate(model.constraints):
             if constraint.net in touched_nets:
-                found.append(Reference("constraint", f"constraints[{index}]", constraint.net))
+                where = f"constraints[{index}]"
+                found.append(Reference("constraint", where, constraint.net, blocking=False))
         if ref in model.intent:
             found.append(Reference("intent", f"intent.{ref}", model.intent[ref]))
         for name, board in model.boards.items():
@@ -232,11 +240,16 @@ class Project:
             components = document.get("components") or {}
             if ref not in components:
                 raise _Rejected(f"component '{ref}' does not exist")
-            blockers = self.references(ref)
+            found = self.references(ref)
+            blockers = [r for r in found if r.blocking]
             if blockers:
+                hint = "remove these references first: " + "; ".join(map(str, blockers))
+                notes = [r for r in found if not r.blocking]
+                if notes:
+                    hint += "\nnote: also affected, no change required: "
+                    hint += "; ".join(map(str, notes))
                 raise _Rejected(
-                    f"component '{ref}' is still referenced in {len(blockers)} place(s)",
-                    "remove these references first: " + "; ".join(str(b) for b in blockers),
+                    f"component '{ref}' is still referenced in {len(blockers)} place(s)", hint
                 )
             yamlio.remove_item(components, ref)
 
