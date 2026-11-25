@@ -8,7 +8,7 @@ kind: mcu
 supply: {nominal_v: 3.3, min_v: 3.0, max_v: 3.6}  # module datasheet v1.8, Table 6-2
 sources:
   - "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8 (2026-03-02): Tables 1-1, 1-2, 3-1, 4-1, 6-2"
-  - "ESP32-S3 Series Datasheet v2.2: Section 2.3.4, Section 2.3.5, Table 2-9, Table 2-14"
+  - "ESP32-S3 Series Datasheet v2.2: Section 2.3.4, Section 2.3.5, Tables 2-4, 2-9, 2-14"
 docs:
   datasheet: docs/esp32-s3-wroom-1.md
   source_url: https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf
@@ -246,8 +246,10 @@ peripherals:  # routing: series datasheet Section 2.3.5, Table 2-9 and its note 
   gpio: {signals: [io], routable: gpio_matrix}
   spi2: {signals: [sck, mosi, miso, cs, hd, wp], routable: gpio_matrix}
   spi3: {signals: [sck, mosi, miso, cs, hd, wp], routable: gpio_matrix}
-  uart0: {signals: [tx, rx, rts, cts], routable: gpio_matrix}
-  uart1: {signals: [tx, rx, rts, cts], routable: gpio_matrix}
+  # Directions: series datasheet v2.2, Table 2-4 IO MUX Functions types
+  # (U0TXD, U1TXD, U0RTS, U1RTS: O; U0RXD, U1RXD, U0CTS, U1CTS: I).
+  uart0: {signals: {tx: out, rx: in, rts: out, cts: in}, routable: gpio_matrix}
+  uart1: {signals: {tx: out, rx: in, rts: out, cts: in}, routable: gpio_matrix}
   uart2: {signals: [tx, rx, rts, cts], routable: gpio_matrix}
   i2c0: {signals: [sda, scl], routable: gpio_matrix}
   i2c1: {signals: [sda, scl], routable: gpio_matrix}

@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import copy
-import os
-import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -15,10 +13,14 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.error import YAMLError
 
 from puffin.core import yamlio
-from puffin.core.issues import Issue, Severity
+from puffin.core.fsio import atomic_write
+from puffin.core.issues import Issue, Severity, sort_issues
 from puffin.core.models import ProjectModel, split_endpoint
 from puffin.core.validate import validate
 from puffin.library import PartLibrary
+
+Checker = Callable[[ProjectModel, PartLibrary], list[Issue]]
+"""An extra check run with validation, e.g. generator preflight wired in by the CLI."""
 
 
 class ProjectLoadError(Exception):
@@ -39,9 +41,15 @@ class Reference:
     kind: str  # net | assignment | override | constraint | intent | firmware
     where: str
     detail: str
+    blocking: bool = True  # False: informational; removal does not require changing it
 
-    def to_dict(self) -> dict[str, str]:
-        return {"kind": self.kind, "where": self.where, "detail": self.detail}
+    def to_dict(self) -> dict[str, str | bool]:
+        return {
+            "kind": self.kind,
+            "where": self.where,
+            "detail": self.detail,
+            "blocking": self.blocking,
+        }
 
     def __str__(self) -> str:
         return f"{self.where} ({self.detail})"
@@ -93,9 +101,16 @@ def _section(document: Any, name: str, factory: Callable[[], Any]) -> Any:
 class Project:
     """A loaded `puffin.yaml`. All mutation goes through the edit methods."""
 
-    def __init__(self, path: Path, source: bytes, library: PartLibrary | None = None) -> None:
+    def __init__(
+        self,
+        path: Path,
+        source: bytes,
+        library: PartLibrary | None = None,
+        checkers: Sequence[Checker] = (),
+    ) -> None:
         self.path = path
         self.library = library or PartLibrary.for_project(path.parent)
+        self.checkers = list(checkers)
         self._source = source
         self._dirty = False
         try:
@@ -110,7 +125,9 @@ class Project:
             raise ProjectLoadError(f"{path}: {_describe(exc)}") from exc
 
     @classmethod
-    def load(cls, path: str | Path, library: PartLibrary | None = None) -> Project:
+    def load(
+        cls, path: str | Path, library: PartLibrary | None = None, checkers: Sequence[Checker] = ()
+    ) -> Project:
         resolved = Path(path)
         if resolved.is_dir():
             resolved = resolved / "puffin.yaml"
@@ -118,14 +135,21 @@ class Project:
             source = resolved.read_bytes()
         except OSError as exc:
             raise ProjectLoadError(f"cannot read {resolved}: {exc.strerror or exc}") from exc
-        return cls(resolved, source, library)
+        return cls(resolved, source, library, checkers)
 
     @property
     def dirty(self) -> bool:
         return self._dirty
 
     def check(self) -> list[Issue]:
-        return validate(self.model, self.library)
+        """Validation plus every extra checker, in one ordered list."""
+        return self._issues(self.model)
+
+    def _issues(self, model: ProjectModel) -> list[Issue]:
+        found = list(validate(model, self.library))
+        for checker in self.checkers:
+            found.extend(checker(model, self.library))
+        return sort_issues(found)
 
     def dumps(self) -> bytes:
         """Serialized project. An unedited project returns its exact source bytes."""
@@ -135,7 +159,8 @@ class Project:
         """Every entry that points at component `ref`, in file order. Read-only.
 
         Constraints name nets, not components, so a constraint is listed when its net
-        includes one of the component's pins.
+        includes one of the component's pins. It is informational (blocking=False): other
+        components may still be on that net. Every other kind blocks removal.
         """
         model = self.model
         found: list[Reference] = []
@@ -155,7 +180,8 @@ class Project:
                 found.append(Reference("override", f"overrides[{index}]", detail))
         for index, constraint in enumerate(model.constraints):
             if constraint.net in touched_nets:
-                found.append(Reference("constraint", f"constraints[{index}]", constraint.net))
+                where = f"constraints[{index}]"
+                found.append(Reference("constraint", where, constraint.net, blocking=False))
         if ref in model.intent:
             found.append(Reference("intent", f"intent.{ref}", model.intent[ref]))
         for name, board in model.boards.items():
@@ -167,20 +193,9 @@ class Project:
         """Write atomically. Returns False if the target already has these bytes."""
         target = Path(path) if path is not None else self.path
         data = self.dumps()
-        if target.is_file() and target.read_bytes() == data:
-            changed = False
-        else:
-            descriptor, temp = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.")
-            try:
-                with os.fdopen(descriptor, "wb") as handle:
-                    handle.write(data)
-                if target.exists():
-                    os.chmod(temp, target.stat().st_mode)
-                os.replace(temp, target)
-            except BaseException:
-                Path(temp).unlink(missing_ok=True)
-                raise
-            changed = True
+        changed = not (target.is_file() and target.read_bytes() == data)
+        if changed:
+            atomic_write(target, data)
         if target == self.path:
             self._source = data
             self._dirty = False
@@ -196,7 +211,7 @@ class Project:
             return self._rejected(operation, exc.message, exc.hint)
         except ValidationError as exc:
             return self._rejected(operation, _describe(exc), "correct the edit arguments")
-        issues = validate(model, self.library)
+        issues = self._issues(model)
         errors = [issue for issue in issues if issue.severity is Severity.ERROR]
         warnings = [issue for issue in issues if issue.severity is Severity.WARNING]
         introduced = [issue for issue in errors if issue.key not in before]
@@ -232,11 +247,16 @@ class Project:
             components = document.get("components") or {}
             if ref not in components:
                 raise _Rejected(f"component '{ref}' does not exist")
-            blockers = self.references(ref)
+            found = self.references(ref)
+            blockers = [r for r in found if r.blocking]
             if blockers:
+                hint = "remove these references first: " + "; ".join(map(str, blockers))
+                notes = [r for r in found if not r.blocking]
+                if notes:
+                    hint += "\nnote: also affected, no change required: "
+                    hint += "; ".join(map(str, notes))
                 raise _Rejected(
-                    f"component '{ref}' is still referenced in {len(blockers)} place(s)",
-                    "remove these references first: " + "; ".join(str(b) for b in blockers),
+                    f"component '{ref}' is still referenced in {len(blockers)} place(s)", hint
                 )
             yamlio.remove_item(components, ref)
 
@@ -367,4 +387,4 @@ class Project:
         return self._edit(f"remove_override({pin})", mutate, dry_run)
 
 
-__all__ = ["EditResult", "Project", "ProjectLoadError", "Reference", "split_endpoint"]
+__all__ = ["Checker", "EditResult", "Project", "ProjectLoadError", "Reference", "split_endpoint"]

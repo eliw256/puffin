@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 
-from puffin.core.issues import Issue, Severity
+from puffin.core.issues import Issue, Severity, sort_issues
 from puffin.core.models import ProjectModel, split_endpoint
 from puffin.library import PartDefinition, PartLibrary, PartLoadError
 
@@ -78,10 +78,7 @@ class _Validator:
         self.check_assignments()
         self.check_constraints()
         self.check_flags()
-        return sorted(
-            set(self.issues),
-            key=lambda i: (i.severity != Severity.ERROR, i.code, i.where, i.message),
-        )
+        return sort_issues(self.issues)
 
     def check_components(self) -> None:
         for ref, component in self.project.components.items():

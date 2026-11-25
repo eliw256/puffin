@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class _PartModel(BaseModel):
@@ -29,9 +29,28 @@ class PartPin(_PartModel):
         return self.type == "P"
 
 
+Direction = Literal["out", "in", "bidir"]
+
+
 class Peripheral(_PartModel):
-    signals: list[str]
+    """A peripheral's signals and how they reach pins.
+
+    `signals` maps each signal to its direction as seen from this part: `out` (drives),
+    `in` (receives), `bidir`, or null when unknown. A plain list means every direction is
+    unknown, so `[tx, rx]` and `{tx: null, rx: null}` are equivalent.
+    """
+
+    signals: dict[str, Direction | None]
     routable: Literal["gpio_matrix", "fixed"] = "fixed"
+
+    @field_validator("signals", mode="before")
+    @classmethod
+    def _accept_list_form(cls, value: Any) -> Any:
+        return dict.fromkeys(value) if isinstance(value, list) else value
+
+    def direction(self, signal: str) -> Direction | None:
+        """Direction of a signal; a sub-name such as `cs.imu` uses its base `cs`."""
+        return self.signals.get(signal.split(".", 1)[0])
 
 
 class Variant(_PartModel):

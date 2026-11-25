@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 
@@ -33,3 +34,10 @@ class Issue:
     def __str__(self) -> str:
         text = f"{self.severity.value}[{self.code}] {self.where}: {self.message}"
         return f"{text}\n  fix: {self.hint}" if self.hint else text
+
+
+def sort_issues(issues: Iterable[Issue]) -> list[Issue]:
+    """Deduplicate and order issues: errors first, then by code, location, and message."""
+    return sorted(
+        set(issues), key=lambda i: (i.severity != Severity.ERROR, i.code, i.where, i.message)
+    )
