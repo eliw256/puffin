@@ -150,7 +150,7 @@ def test_series_passive_warns_once_and_names_the_constrained_half(project: Proje
     series = [w for w in changes.warnings if w.code == "import-series-passive"]
     assert [w.message for w in series] == [
         "IMU_SCK is split by R5 (Device:R); the far side imports as AUTO(U3.SCK); "
-        "the constraint on IMU_SCK covers only that half"
+        "the constraint covers only the U1.GPIO12 side, net IMU_SCK"
     ]
     assert series[0].severity is Severity.WARNING
     assert ("AUTO(U3.SCK)", ("U3.SCK",)) in changes.nets_added

@@ -136,8 +136,8 @@ cheap, needs no KiCad, and gives a warning, never an error.
   becomes `AUTO(…)`. The change set warns whenever an unmanaged symbol with exactly two connected
   pins bridges two nets that each have at least one managed endpoint, naming the symbol, its
   library part, and both nets. For example: `IMU_SCK is split by R5 (Device:R); the far side
-  imports as AUTO(U3.SCK)`. If a constraint is on one of the halves, the warning says which half
-  it applies to. "Connected" excludes `unconnected-(…)` pins. *Refined in Step 4:* a bridge is
+  imports as AUTO(U3.SCK)`. If a constraint is on one of the halves, the warning names that side
+  by its pins and net, e.g. `the constraint covers only the U1.GPIO12 side, net IMU_SCK`. "Connected" excludes `unconnected-(…)` pins. *Refined in Step 4:* a bridge is
   skipped when either net is a power rail (it has a `power_in` or `power_out` pin in the
   netlist). Without this, every pull-up, EN RC part, button and decoupling cap in the example
   schematic (R1–R3, C1–C4, SW1) would warn.

@@ -453,6 +453,7 @@ class _Builder:
     def _series_passives(self) -> None:
         """Warn when an unmanaged two-pin part splits a signal between managed pins."""
         names: dict[int, str] = {}
+        sides: dict[str, frozenset[str]] = {}  # imported net name -> its managed endpoints
         managed_nets: set[int] = set()
         power_nets: set[int] = set()
         pins_by_ref: dict[str, list[int]] = defaultdict(list)
@@ -465,6 +466,7 @@ class _Builder:
                 if n.ref in self.managed and (p := map_pin(self.managed[n.ref], n))
             )
             names[index] = import_net_name(net, endpoints)
+            sides[names[index]] = endpoints
             if endpoints:
                 managed_nets.add(index)
             if any(n.pintype in POWER_PIN_TYPES for n in net.nodes):
@@ -489,7 +491,8 @@ class _Builder:
                 message = f"{a} and {b} are joined through {ref} ({libpart}) and import apart"
             halves = [n for n in (a, b) if n in constrained]
             if len(halves) == 1:
-                message += f"; the constraint on {halves[0]} covers only that half"
+                side = ", ".join(sorted(sides[halves[0]]))
+                message += f"; the constraint covers only the {side} side, net {halves[0]}"
             self.changes.warnings.append(
                 _issue(
                     "import-series-passive",
