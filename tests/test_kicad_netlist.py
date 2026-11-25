@@ -113,3 +113,12 @@ def test_every_fixture_mcu_node_maps() -> None:
         for node in net.nodes:
             if node.ref in {"U1", "U2"}:
                 assert map_pin(part, node) is not None, node
+
+
+def test_fixture_u3_fields_with_empty_variant() -> None:
+    u3 = read_netlist(FIXTURE.read_text(encoding="utf-8")).components["U3"]
+    assert u3.puffin("Puffin_Part") == "example/spi-imu"
+    assert u3.puffin("Puffin_Board") == "main"
+    assert "Puffin_Variant" in u3.fields
+    assert u3.puffin("Puffin_Variant") is None
+    assert u3.libpart == "Placeholder:IMU_Placeholder"
