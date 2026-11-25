@@ -61,8 +61,80 @@ def test_add_component_rejects_unknown_part_and_duplicate(project: Project) -> N
     assert not project.add_component("U1", "example/spi-imu", "main").ok
 
 
-def test_remove_component_in_use_is_rejected(project: Project) -> None:
-    assert not project.remove_component("U3").ok
+def test_references_lists_every_kind_in_file_order(project: Project) -> None:
+    imu = [(r.kind, r.where, r.detail) for r in project.references("U3")]
+    assert imu == [
+        ("net", "nets.IMU_SCK", "U3.SCK"),
+        ("net", "nets.IMU_MOSI", "U3.SDI"),
+        ("net", "nets.IMU_MISO", "U3.SDO"),
+        ("net", "nets.IMU_CS", "U3.CS"),
+        ("net", "nets.3V3", "U3.VDD"),
+        ("net", "nets.GND", "U3.GND"),
+        ("constraint", "constraints[0]", "IMU_SCK"),
+        ("intent", "intent.U3", "IMU for balance control; read at 400 Hz"),
+    ]
+    kinds = [r.kind for r in project.references("U1")]
+    assert kinds.count("assignment") == 7
+    assert {"net", "override", "firmware"} <= set(kinds)
+    assert ("firmware", "boards.main.firmware.mcu") in {
+        (r.kind, r.where) for r in project.references("U1")
+    }
+
+
+def test_references_of_unknown_or_unused_component_is_empty(project: Project) -> None:
+    assert project.references("U99") == []
+    assert project.add_component("U4", "example/spi-imu", "main").ok
+    assert project.references("U4") == []
+
+
+def test_references_is_read_only(project: Project) -> None:
+    before = project.dumps()
+    project.references("U1")
+    assert project.dumps() == before and not project.dirty
+
+
+def test_remove_component_in_use_lists_blockers(project: Project) -> None:
+    before = project.dumps()
+    result = project.remove_component("U3")
+    assert not result.ok and not result.applied
+    [issue] = result.errors
+    assert issue.code == "edit-rejected"
+    assert "8 place(s)" in issue.message
+    assert "nets.IMU_SCK (U3.SCK)" in issue.hint
+    assert "constraints[0] (IMU_SCK)" in issue.hint
+    assert "intent.U3" in issue.hint
+    assert project.dumps() == before
+
+
+def test_intent_alone_blocks_removal(example_path: Path) -> None:
+    text = example_path.read_text()
+    text = text.replace(
+        "components:\n", "components:\n  U4:\n    part: example/spi-imu\n    board: main\n"
+    )
+    example_path.write_text(text + "  U4: spare\n")
+    project = Project.load(example_path)
+    assert project.check() == []
+    result = project.remove_component("U4")
+    assert not result.ok
+    assert "intent.U4 (spare)" in result.errors[0].hint
+
+
+def test_removing_last_entries_restores_original_bytes(project: Project) -> None:
+    before = project.dumps()
+    assert project.connect("LED", "U1.GPIO4").ok
+    assert project.assign_pin("U1", "gpio", "io.led", "GPIO4").ok
+    assert project.unassign_pin("U1", "gpio", "io.led").ok
+    assert project.disconnect("LED", "U1.GPIO4").ok
+    assert project.add_override("U2.GPIO46", "strapping", "temporary").ok
+    assert project.remove_override("U2.GPIO46", "strapping").ok
+    assert project.dumps() == before
+
+
+def test_unreferenced_component_can_be_removed(project: Project) -> None:
+    before = project.dumps()
+    assert project.add_component("U4", "example/spi-imu", "main").ok
+    assert project.remove_component("U4").ok
+    assert project.dumps() == before
 
 
 def test_connect_new_net_keeps_section_spacing(project: Project) -> None:

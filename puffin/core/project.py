@@ -33,6 +33,21 @@ class _Rejected(Exception):
 
 
 @dataclass(frozen=True)
+class Reference:
+    """One place in the graph that points at a component."""
+
+    kind: str  # net | assignment | override | constraint | intent | firmware
+    where: str
+    detail: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"kind": self.kind, "where": self.where, "detail": self.detail}
+
+    def __str__(self) -> str:
+        return f"{self.where} ({self.detail})"
+
+
+@dataclass(frozen=True)
 class EditResult:
     """Outcome of one edit. A rejected edit leaves the project unchanged."""
 
@@ -116,6 +131,38 @@ class Project:
         """Serialized project. An unedited project returns its exact source bytes."""
         return yamlio.dump(self._document) if self._dirty else self._source
 
+    def references(self, ref: str) -> list[Reference]:
+        """Every entry that points at component `ref`, in file order. Read-only.
+
+        Constraints name nets, not components, so a constraint is listed when its net
+        includes one of the component's pins.
+        """
+        model = self.model
+        found: list[Reference] = []
+        touched_nets: set[str] = set()
+        for net, endpoints in model.nets.items():
+            for endpoint in endpoints:
+                if split_endpoint(endpoint)[0] == ref:
+                    found.append(Reference("net", f"nets.{net}", endpoint))
+                    touched_nets.add(net)
+        for peripheral, signals in model.assignments.get(ref, {}).items():
+            for signal, pin in signals.items():
+                where = f"assignments.{ref}.{peripheral}.{signal}"
+                found.append(Reference("assignment", where, pin))
+        for index, override in enumerate(model.overrides):
+            if split_endpoint(override.pin)[0] == ref:
+                detail = f"{override.pin} allow {override.allow}"
+                found.append(Reference("override", f"overrides[{index}]", detail))
+        for index, constraint in enumerate(model.constraints):
+            if constraint.net in touched_nets:
+                found.append(Reference("constraint", f"constraints[{index}]", constraint.net))
+        if ref in model.intent:
+            found.append(Reference("intent", f"intent.{ref}", model.intent[ref]))
+        for name, board in model.boards.items():
+            if board.firmware is not None and board.firmware.mcu == ref:
+                found.append(Reference("firmware", f"boards.{name}.firmware.mcu", ref))
+        return found
+
     def save(self, path: str | Path | None = None) -> bool:
         """Write atomically. Returns False if the target already has these bytes."""
         target = Path(path) if path is not None else self.path
@@ -185,7 +232,13 @@ class Project:
             components = document.get("components") or {}
             if ref not in components:
                 raise _Rejected(f"component '{ref}' does not exist")
-            del components[ref]
+            blockers = self.references(ref)
+            if blockers:
+                raise _Rejected(
+                    f"component '{ref}' is still referenced in {len(blockers)} place(s)",
+                    "remove these references first: " + "; ".join(str(b) for b in blockers),
+                )
+            yamlio.remove_item(components, ref)
 
         return self._edit(f"remove_component({ref})", mutate, dry_run)
 
@@ -216,7 +269,7 @@ class Project:
                     raise _Rejected(f"{endpoint} is not on net '{net}'")
                 nets[net].remove(endpoint)
             if not nets[net]:
-                del nets[net]
+                yamlio.remove_item(nets, net)
 
         return self._edit(f"disconnect({net})", mutate, dry_run)
 
@@ -245,14 +298,20 @@ class Project:
     ) -> EditResult:
         def mutate(document: Any) -> None:
             try:
-                peripherals = document["assignments"][component]
-                del peripherals[peripheral][signal]
+                assignments = document["assignments"]
+                peripherals = assignments[component]
+                signals = peripherals[peripheral]
+                if signal not in signals:
+                    raise KeyError(signal)
             except (KeyError, TypeError) as exc:
                 raise _Rejected(f"{component} has no assignment {peripheral}.{signal}") from exc
-            if not peripherals[peripheral]:
-                del peripherals[peripheral]
-            if not peripherals:
-                del document["assignments"][component]
+            # Delete the highest level that would become empty, so spacing after it survives.
+            if len(signals) > 1:
+                yamlio.remove_item(signals, signal)
+            elif len(peripherals) > 1:
+                yamlio.remove_item(peripherals, peripheral)
+            else:
+                yamlio.remove_item(assignments, component)
 
         return self._edit(f"unassign_pin({component}.{peripheral}.{signal})", mutate, dry_run)
 
@@ -301,11 +360,11 @@ class Project:
             overrides = document.get("overrides") or []
             for index, item in enumerate(overrides):
                 if item["pin"] == pin and item["allow"] == allow:
-                    del overrides[index]
+                    yamlio.remove_item(overrides, index)
                     return
             raise _Rejected(f"no override '{allow}' on {pin}")
 
         return self._edit(f"remove_override({pin})", mutate, dry_run)
 
 
-__all__ = ["EditResult", "Project", "ProjectLoadError", "split_endpoint"]
+__all__ = ["EditResult", "Project", "ProjectLoadError", "Reference", "split_endpoint"]

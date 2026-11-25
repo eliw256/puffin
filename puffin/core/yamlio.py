@@ -104,6 +104,17 @@ def append_item(container: Any, key: Any, value: Any) -> None:
         _put_trailing(container, trailing)
 
 
+def remove_item(container: Any, key: Any) -> None:
+    """Delete from a block collection, keeping following comments in place.
+
+    If the collection becomes empty, the comments that followed it are lost.
+    """
+    trailing = _take_trailing(container) if key == _last_key(container) else None
+    del container[key]
+    if trailing is not None and container:
+        _put_trailing(container, trailing)
+
+
 def flow_seq(items: list[str]) -> CommentedSeq:
     seq = CommentedSeq(items)
     seq.fa.set_flow_style()
