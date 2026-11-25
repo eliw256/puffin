@@ -7,8 +7,8 @@ ship an AI model. It gives whatever model you bring the project, the docs, and t
 judgment-heavy work, while deterministic code handles sync and every edit goes through the same
 validated API.
 
-Status: milestone M2 (core graph, validation, ESP-IDF pin headers, KiCad import). The MCP
-server and the UI come in later milestones.
+Status: milestone M3 (core graph, validation, ESP-IDF pin headers, KiCad import, MCP server).
+The web UI comes in a later milestone.
 
 ## Install
 
@@ -66,6 +66,24 @@ apply without a prompt, `--netlist FILE` to use a pre-exported netlist, or `--js
 import that ran `kicad-cli`, `.puffin/state.json` records hashes of the schematic and of the
 graph's managed connectivity, so `puffin check` can warn when either side has changed since. A `--netlist` import never updates it, since the file
 may not match the schematic.
+
+## Use it from an AI model (MCP)
+
+`puffin mcp` serves one project to your own model over MCP (stdio). With Claude Code:
+
+```bash
+claude mcp add puffin -- uv run puffin mcp examples/dual-esp32s3-robot
+```
+
+The model gets tools to read the graph (`get_project`, `query_pins`, `query_net`,
+`legal_pins`), read part data and datasheet extracts (`get_part`, `search_docs`,
+`read_doc_section`), run `check`, and change the project only through `propose_edit` or
+`propose_import_kicad`, then `apply_edit`, then `generate`. Every proposal comes with the
+`puffin.yaml` diff and the firmware header diff, and is refused as stale if the file changed in
+between. The server also sends a behavior contract: show the diff before applying, never edit
+generated files, and cite a doc section or project data for every electrical claim.
+Applied proposals are logged to `.puffin/history.jsonl` (gitignored). See
+[docs/M3_MCP.md](docs/M3_MCP.md) for the full tool surface.
 
 ## Learn more
 

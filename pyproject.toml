@@ -6,6 +6,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
+    "mcp>=2.3.0,<3",
     "pydantic>=2.7,<3",
     "ruamel.yaml>=0.18,<0.19",
 ]
@@ -43,7 +44,7 @@ select = ["E", "F", "I", "B", "UP", "RUF"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["puffin/core", "puffin/generators", "puffin/kicad"]
+files = ["puffin/core", "puffin/generators", "puffin/kicad", "puffin/mcp"]
 
 [[tool.mypy.overrides]]
 module = ["ruamel.*"]

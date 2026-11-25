@@ -20,13 +20,16 @@ are marked **[proposed]**; §9 records how each was resolved.
   - The project is loaded with `checkers=[check_generation]`, the same as the CLI, so "check is
     the whole truth" holds over MCP too.
 - **stdout belongs to the protocol.**
-  - At startup the server hands the real stdout to the stdio transport, then points `sys.stdout`
-    at stderr. A stray `print` anywhere in Puffin then lands on stderr and can't corrupt the
-    stream.
+  - While serving, the SDK (2.3) writes the protocol to a private duplicate of fd 1 and points
+    fd 1 itself at stderr. *As built:* that alone leaked. `sys.stdout` is block-buffered on a
+    pipe, so a stray `print` sat in its buffer and was flushed at exit, after the SDK had
+    restored fd 1 to the wire. `serve()` therefore also makes `sys.stdout` unbuffered, so every
+    stray write reaches fd 1 at once, while it still points at stderr.
   - All logging goes to stderr.
-  - *Test:* run `puffin mcp` as a subprocess and drive initialize, `tools/list`, a read tool, a
-    `propose_edit` and an `apply_edit`. Every stdout line must parse as a JSON-RPC message. A
-    test-only hook makes a tool print to stdout, to prove the redirect catches it.
+  - *Test:* spawn the real server through a wrapper script that patches a tool to `print`, and
+    tee its stdout. Drive it with the SDK's stdio client. Every captured stdout line must parse
+    as JSON-RPC, and the stray text must not appear. The test fails without the unbuffered
+    stdout. No production code carries a test hook.
 - **Package location:** `puffin/mcp/`, as in the spec's repo layout. Absolute imports keep
   `import mcp` pointing at the SDK.
 - *Addition:* **the project reloads when it changes on disk.** Before each tool call, the server
@@ -123,7 +126,9 @@ and `[T]` an array.
   ```
 - `status` is one of:
   - `current`: holds this signal now.
-  - `free`: legal, unflagged, no assignment.
+  - `free`: legal, unflagged (or already overridden), no assignment, on no net.
+  - `connected`: legal and unassigned, but already on a net *(added while building: moving a
+    signal there would join two nets)*.
   - `in_use`: legal, but another signal is assigned there.
   - `needs_override`: legal, but flagged; `needs_override` lists the flags.
   - Flag exemptions from `flag_policy` are applied.
