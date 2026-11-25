@@ -8,3 +8,6 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+*~robot.kicad_sch.lck
+*#auto_saved_files#
+*ERC.rpt
