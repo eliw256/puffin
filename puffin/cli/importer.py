@@ -137,7 +137,7 @@ def cmd_import_kicad(
             )
             return
         for name, _ in sources:
-            record_sync(project.path.parent, name)
+            record_sync(project.path.parent, name, project.model)
         payload["state_updated"] = True
 
     if not args.json:

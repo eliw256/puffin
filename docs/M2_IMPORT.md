@@ -122,6 +122,14 @@ cheap, needs no KiCad, and gives a warning, never an error.
   change also records it, as "in sync". A `--dry-run` never writes it. *M2 review:* only a
   netlist exported by kicad-cli in the same run counts; a `--netlist` import leaves the state
   untouched and says so, because the file may come from another revision.
+- **Both sides are fingerprinted (M3 Step 0).** Hashing only the schematic missed edits on the
+  graph side: after a `--netlist` import, or a hand edit to a net, `check` stayed quiet. Each real
+  sync now also records `graph_sha256`, a hash of the graph's *managed connectivity*: the
+  components on that schematic's boards and every net restricted to their pins, canonicalized.
+  Assignments, constraints, overrides and intent are excluded, since the graph owns them.
+  `puffin check` warns `schematic-drift` ("schematic changed since last import") and/or
+  `graph-drift` ("puffin.yaml connectivity differs from the last KiCad sync (KiCad wins on next
+  import)"). State from before this change (version 1) reads as never synced.
 - **Commit it:** I recommend committing the state file. The schematic is in git, so the hash is
   the same on every checkout, and the file then records which schematic revision the YAML was
   last synced with. A gitignored file would make every fresh clone report drift.
