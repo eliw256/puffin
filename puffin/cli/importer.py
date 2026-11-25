@@ -13,7 +13,7 @@ from puffin.core import Issue, Op, Project
 from puffin.kicad import NetlistError, read_netlist
 from puffin.kicad.changes import ChangeSet, build_changes
 from puffin.kicad.export import KiCadCliError, export_netlist
-from puffin.kicad.state import record_sync, schematics
+from puffin.kicad.state import STATE_PATH, record_sync, schematics
 
 
 def _endpoints(items: tuple[str, ...]) -> str:
@@ -112,6 +112,7 @@ def cmd_import_kicad(
         "in_sync": in_sync,
         "ok": not introduced,
         "applied": False,
+        "state_updated": False,
         "schematics": [changes.to_dict() for changes in change_sets],
         "introduced_errors": [issue.to_dict() for issue in introduced],
     }
@@ -121,6 +122,23 @@ def cmd_import_kicad(
             print(json.dumps(payload, indent=2))
         elif message:
             print(message)
+
+    def sync_state() -> None:
+        """Record schematic hashes, but only for a netlist kicad-cli exported in this run.
+
+        A --netlist file may come from any revision of the schematic (or none), so recording
+        the current hash would make `puffin check` report "in sync" when it is not.
+        """
+        if args.netlist is not None:
+            print(
+                "puffin import: note: --netlist was used, so drift state "
+                f"({STATE_PATH.as_posix()}) was not updated",
+                file=sys.stderr,
+            )
+            return
+        for name, _ in sources:
+            record_sync(project.path.parent, name)
+        payload["state_updated"] = True
 
     if not args.json:
         for changes in change_sets:
@@ -133,8 +151,7 @@ def cmd_import_kicad(
         return 1
     if in_sync:
         if not args.dry_run:
-            for name, _ in sources:
-                record_sync(project.path.parent, name)
+            sync_state()
         report("puffin import: in sync, nothing to change")
         return 0
     if args.dry_run:
@@ -156,8 +173,7 @@ def cmd_import_kicad(
         report("puffin import: rejected on apply; nothing written")
         return 1
     project.save()
-    for name, _ in sources:
-        record_sync(project.path.parent, name)
+    sync_state()
     payload["applied"] = True
     report(f"puffin import: applied {len(ops)} operation(s) to {project.path.name}")
     return 0

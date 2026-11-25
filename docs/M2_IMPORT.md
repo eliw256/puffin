@@ -119,7 +119,9 @@ Instead, `.puffin/state.json` records a SHA-256 of each schematic file: the root
 sub-sheets, with line endings normalized to LF. `puffin check` compares those hashes. That is
 cheap, needs no KiCad, and gives a warning, never an error.
 - **When it's written:** an applied import records the hash. An import that finds nothing to
-  change also records it, as "in sync". A `--dry-run` never writes it.
+  change also records it, as "in sync". A `--dry-run` never writes it. *M2 review:* only a
+  netlist exported by kicad-cli in the same run counts; a `--netlist` import leaves the state
+  untouched and says so, because the file may come from another revision.
 - **Commit it:** I recommend committing the state file. The schematic is in git, so the hash is
   the same on every checkout, and the file then records which schematic revision the YAML was
   last synced with. A gitignored file would make every fresh clone report drift.

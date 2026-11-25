@@ -63,8 +63,9 @@ managed; everything else, such as resistors and buttons, stays out of the graph.
 components and nets; `puffin.yaml` keeps assignments, constraints, overrides, and intent. A pin
 that moves in KiCad carries its assignment along when the move is unambiguous. Pass `--yes` to
 apply without a prompt, `--netlist FILE` to use a pre-exported netlist, or `--json`. After an
-import, `.puffin/state.json` records the schematic's hash so `puffin check` can warn when it may
-have changed since.
+import that ran `kicad-cli`, `.puffin/state.json` records the schematic's hash so `puffin check`
+can warn when it may have changed since. A `--netlist` import never updates it, since the file
+may not match the schematic.
 
 ## Learn more
 

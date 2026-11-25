@@ -168,6 +168,7 @@ def test_json_output_is_stable(example_path: Path, capsys: pytest.CaptureFixture
     text = edited((SCK_U1, node("U1", "22", "IO14")))
     assert run(example_path, text, "--dry-run", "--json") == 0
     first = capsys.readouterr().out
+    assert json.loads(first)["state_updated"] is False
     assert run(example_path, text, "--dry-run", "--json") == 0
     assert capsys.readouterr().out == first
     data = json.loads(first)
@@ -176,18 +177,73 @@ def test_json_output_is_stable(example_path: Path, capsys: pytest.CaptureFixture
     assert data["schematics"][0]["ops"][0]["op"] == "set_net"
 
 
-def test_in_sync_records_state_but_dry_run_never_does(
+def fake_kicad_cli(monkeypatch: pytest.MonkeyPatch, text: str) -> None:
+    """Stand in for a kicad-cli export of the project's schematic."""
+    monkeypatch.setattr("puffin.cli.importer.export_netlist", lambda _schematic: text)
+
+
+def kicad(example_path: Path, *flags: str) -> int:
+    return main(["import", "kicad", str(example_path), *flags])
+
+
+def drift(example_path: Path) -> None:
+    path = example_path.parent / SCHEMATIC
+    path.write_bytes(path.read_bytes().replace(b'"U3"', b'"U3"  ', 1))
+
+
+def test_kicad_cli_export_records_state_but_dry_run_never_does(
+    example_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake_kicad_cli(monkeypatch, (example_path.parent / "hw" / "robot" / "robot.net").read_text())
+    state = example_path.parent / STATE_PATH
+    state.unlink()
+    assert kicad(example_path, "--dry-run") == 0
+    assert not state.exists()
+    assert kicad(example_path) == 0  # in sync: no --yes needed, nothing to apply
+    assert "in sync" in capsys.readouterr().out
+    recorded = json.loads(state.read_text())["schematics"][SCHEMATIC]["sha256"]
+    assert recorded == schematic_hash(example_path.parent, SCHEMATIC)
+
+
+def test_kicad_cli_apply_records_state(
+    example_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    drift(example_path)
+    fake_kicad_cli(monkeypatch, edited((SCK_U1, node("U1", "22", "IO14"))))
+    assert kicad(example_path, "--yes", "--json") == 0
+    assert json.loads(capsys.readouterr().out)["state_updated"] is True
+    main(["check", str(example_path)])
+    assert "schematic-drift" not in capsys.readouterr().out
+
+
+def test_netlist_in_sync_leaves_state_alone(
     example_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     state = example_path.parent / STATE_PATH
     state.unlink()
     fixture = (example_path.parent / "hw" / "robot" / "robot.net").read_text()
-    assert run(example_path, fixture, "--dry-run") == 0
+    assert run(example_path, fixture) == 0
+    captured = capsys.readouterr()
+    assert "in sync" in captured.out
+    assert "--netlist was used, so drift state (.puffin/state.json) was not updated" in (
+        captured.err
+    )
     assert not state.exists()
-    assert run(example_path, fixture) == 0  # in sync: no --yes needed, nothing to apply
-    assert "in sync" in capsys.readouterr().out
-    recorded = json.loads(state.read_text())["schematics"][SCHEMATIC]["sha256"]
-    assert recorded == schematic_hash(example_path.parent, SCHEMATIC)
+
+
+def test_netlist_import_does_not_fake_a_sync(
+    example_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    drift(example_path)
+    state_before = (example_path.parent / STATE_PATH).read_bytes()
+    assert run(example_path, edited((SCK_U1, node("U1", "22", "IO14"))), "--yes") == 0
+    captured = capsys.readouterr()
+    assert "applied 2 operation(s)" in captured.out
+    assert "drift state (.puffin/state.json) was not updated" in captured.err
+    assert "GPIO14" in example_path.read_text()
+    assert (example_path.parent / STATE_PATH).read_bytes() == state_before
+    main(["check", str(example_path)])
+    assert "warning[schematic-drift]" in capsys.readouterr().out
 
 
 def test_netlist_requires_a_single_schematic(
