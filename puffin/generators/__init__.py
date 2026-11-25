@@ -1,14 +1,17 @@
 """Firmware generators, keyed by `boards.<name>.firmware.framework`.
 
-`generate` is pure: it reads the model and part library and returns file bytes plus
-issues. Writing files is the caller's job (see `puffin.generators.writer`).
+`check_generation` reports everything that would stop generation and plugs into
+`Project` as a checker, so `puffin check` is the whole truth. `generate` is pure: it
+reads the model and part library and returns file bytes plus issues. Writing files is
+the caller's job (see `puffin.generators.writer`).
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import PurePosixPath, PureWindowsPath
 
-from puffin.core.issues import Issue, Severity
+from puffin.core.issues import Issue, Severity, sort_issues
 from puffin.core.models import ProjectModel
 from puffin.core.validate import validate
 from puffin.generators.espidf import EspIdfGenerator
@@ -22,7 +25,7 @@ from puffin.generators.types import (
     Generator,
     gen_issue,
 )
-from puffin.library import PartLibrary
+from puffin.library import PartLibrary, PartLoadError
 
 GENERATORS: dict[str, Generator] = {g.framework: g for g in (EspIdfGenerator(),)}
 
@@ -45,38 +48,27 @@ def normalize_output(path: str) -> str | None:
     return "/".join(parts) or None
 
 
-def generate(
-    model: ProjectModel, library: PartLibrary, board: str | None = None
-) -> GenerationResult:
-    """Render firmware files for every board with firmware, or only `board`."""
-    issues: list[Issue] = list(validate(model, library))
-    if any(issue.severity is Severity.ERROR for issue in issues):
-        return GenerationResult([], issues)
-    if board is not None and board not in model.boards:
-        known = ", ".join(model.boards) or "none"
-        issues.append(
-            gen_issue(
-                "unknown-board", board, f"board '{board}' is not defined", f"use one of: {known}"
-            )
-        )
-        return GenerationResult([], issues)
+@dataclass(frozen=True)
+class _Planned:
+    path: str
+    generator: Generator
+    job: BoardJob
 
-    files: list[GeneratedFile] = []
+
+def _plan(model: ProjectModel, library: PartLibrary) -> tuple[dict[str, _Planned], list[Issue]]:
+    """Resolve each board with firmware to a generator job, reporting what blocks it.
+
+    Tolerates models with validation errors: boards whose MCU or part does not resolve are
+    skipped, since validation already reports them.
+    """
+    planned: dict[str, _Planned] = {}
+    issues: list[Issue] = []
     owners: dict[str, str] = {}
-    for name in [board] if board is not None else list(model.boards):
-        where = f"boards.{name}.firmware"
-        firmware = model.boards[name].firmware
+    for name, board in model.boards.items():
+        firmware = board.firmware
         if firmware is None:
-            if board is not None:
-                issues.append(
-                    gen_issue(
-                        "no-firmware",
-                        where,
-                        f"board '{name}' has no firmware",
-                        "add a firmware section to the board",
-                    )
-                )
             continue
+        where = f"boards.{name}.firmware"
         generator = GENERATORS.get(firmware.framework)
         if generator is None:
             supported = ", ".join(sorted(GENERATORS))
@@ -111,15 +103,57 @@ def generate(
             )
             continue
         owners[path] = name
-        part = library.get(model.components[firmware.mcu].part)
-        assert part is not None  # guaranteed by validation
+        component = model.components.get(firmware.mcu)
+        try:
+            part = library.get(component.part) if component else None
+        except PartLoadError:
+            part = None
+        if part is None:
+            continue
         job = BoardJob(model, library, name, firmware, firmware.mcu, part)
-        content, board_issues = generator.render(job)
-        issues.extend(board_issues)
-        files.append(GeneratedFile(name, path, content))
+        issues.extend(generator.preflight(job))
+        planned[name] = _Planned(path, generator, job)
+    return planned, issues
 
-    result = GenerationResult(files, issues)
-    return result if result.ok else GenerationResult([], issues)
+
+def check_generation(model: ProjectModel, library: PartLibrary) -> list[Issue]:
+    """Everything that would stop generation, as a Project checker.
+
+    Wire it in with `Project.load(path, checkers=[check_generation])` so `check()` and the
+    edit API reject what `puffin gen` would reject. Pure.
+    """
+    return _plan(model, library)[1]
+
+
+def generate(
+    model: ProjectModel, library: PartLibrary, board: str | None = None
+) -> GenerationResult:
+    """Render firmware files for every board with firmware, or only `board`. Pure."""
+    planned, generation_issues = _plan(model, library)
+    issues = sort_issues([*validate(model, library), *generation_issues])
+    if any(issue.severity is Severity.ERROR for issue in issues):
+        return GenerationResult([], issues)
+    if board is not None:
+        if board not in model.boards:
+            known = ", ".join(model.boards) or "none"
+            issue = gen_issue(
+                "unknown-board", board, f"board '{board}' is not defined", f"use one of: {known}"
+            )
+            return GenerationResult([], [*issues, issue])
+        if board not in planned:
+            issue = gen_issue(
+                "no-firmware",
+                f"boards.{board}.firmware",
+                f"board '{board}' has no firmware",
+                "add a firmware section to the board",
+            )
+            return GenerationResult([], [*issues, issue])
+    files = [
+        GeneratedFile(name, item.path, item.generator.render(item.job))
+        for name, item in planned.items()
+        if board is None or name == board
+    ]
+    return GenerationResult(files, issues)
 
 
 __all__ = [
@@ -131,6 +165,7 @@ __all__ = [
     "GeneratedFile",
     "GenerationResult",
     "Generator",
+    "check_generation",
     "generate",
     "normalize_output",
 ]

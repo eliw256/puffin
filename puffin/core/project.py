@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -14,10 +14,13 @@ from ruamel.yaml.error import YAMLError
 
 from puffin.core import yamlio
 from puffin.core.fsio import atomic_write
-from puffin.core.issues import Issue, Severity
+from puffin.core.issues import Issue, Severity, sort_issues
 from puffin.core.models import ProjectModel, split_endpoint
 from puffin.core.validate import validate
 from puffin.library import PartLibrary
+
+Checker = Callable[[ProjectModel, PartLibrary], list[Issue]]
+"""An extra check run with validation, e.g. generator preflight wired in by the CLI."""
 
 
 class ProjectLoadError(Exception):
@@ -98,9 +101,16 @@ def _section(document: Any, name: str, factory: Callable[[], Any]) -> Any:
 class Project:
     """A loaded `puffin.yaml`. All mutation goes through the edit methods."""
 
-    def __init__(self, path: Path, source: bytes, library: PartLibrary | None = None) -> None:
+    def __init__(
+        self,
+        path: Path,
+        source: bytes,
+        library: PartLibrary | None = None,
+        checkers: Sequence[Checker] = (),
+    ) -> None:
         self.path = path
         self.library = library or PartLibrary.for_project(path.parent)
+        self.checkers = list(checkers)
         self._source = source
         self._dirty = False
         try:
@@ -115,7 +125,9 @@ class Project:
             raise ProjectLoadError(f"{path}: {_describe(exc)}") from exc
 
     @classmethod
-    def load(cls, path: str | Path, library: PartLibrary | None = None) -> Project:
+    def load(
+        cls, path: str | Path, library: PartLibrary | None = None, checkers: Sequence[Checker] = ()
+    ) -> Project:
         resolved = Path(path)
         if resolved.is_dir():
             resolved = resolved / "puffin.yaml"
@@ -123,14 +135,21 @@ class Project:
             source = resolved.read_bytes()
         except OSError as exc:
             raise ProjectLoadError(f"cannot read {resolved}: {exc.strerror or exc}") from exc
-        return cls(resolved, source, library)
+        return cls(resolved, source, library, checkers)
 
     @property
     def dirty(self) -> bool:
         return self._dirty
 
     def check(self) -> list[Issue]:
-        return validate(self.model, self.library)
+        """Validation plus every extra checker, in one ordered list."""
+        return self._issues(self.model)
+
+    def _issues(self, model: ProjectModel) -> list[Issue]:
+        found = list(validate(model, self.library))
+        for checker in self.checkers:
+            found.extend(checker(model, self.library))
+        return sort_issues(found)
 
     def dumps(self) -> bytes:
         """Serialized project. An unedited project returns its exact source bytes."""
@@ -192,7 +211,7 @@ class Project:
             return self._rejected(operation, exc.message, exc.hint)
         except ValidationError as exc:
             return self._rejected(operation, _describe(exc), "correct the edit arguments")
-        issues = validate(model, self.library)
+        issues = self._issues(model)
         errors = [issue for issue in issues if issue.severity is Severity.ERROR]
         warnings = [issue for issue in issues if issue.severity is Severity.WARNING]
         introduced = [issue for issue in errors if issue.key not in before]
@@ -368,4 +387,4 @@ class Project:
         return self._edit(f"remove_override({pin})", mutate, dry_run)
 
 
-__all__ = ["EditResult", "Project", "ProjectLoadError", "Reference", "split_endpoint"]
+__all__ = ["Checker", "EditResult", "Project", "ProjectLoadError", "Reference", "split_endpoint"]

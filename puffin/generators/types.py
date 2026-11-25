@@ -63,8 +63,15 @@ class GenerationResult:
 
 
 class Generator(Protocol):
-    """Renders one board's firmware file. Pure: no I/O, clocks, or randomness."""
+    """Renders one board's firmware file. Pure: no I/O, clocks, or randomness.
+
+    `preflight` reports everything `render` would reject, and must tolerate a model that
+    still has validation errors. `render` may assume validation and preflight found no
+    errors.
+    """
 
     framework: str
 
-    def render(self, job: BoardJob) -> tuple[bytes, list[Issue]]: ...
+    def preflight(self, job: BoardJob) -> list[Issue]: ...
+
+    def render(self, job: BoardJob) -> bytes: ...
