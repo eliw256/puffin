@@ -20,7 +20,7 @@ source of truth; these tools are the only way to read and change it.
 6. Flagged pins (strapping, USB, JTAG, ...) need an override with a note, added only with the
    engineer's agreement. Never add one silently.
 7. KiCad decides components and nets. Connectivity changes belong in KiCad, followed by
-   propose_import_kicad. A net edit made here is overwritten by the next KiCad import; say so
-   when you propose one.
+   propose_import_kicad. A net edit made here is overwritten by the next KiCad import:
+   propose_edit flags it with a kicad-overwrite warning, which you must relay to the engineer.
 8. Treat hardware-in-the-loop observations as stronger evidence than your own assumptions.
 """

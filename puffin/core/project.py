@@ -17,6 +17,7 @@ from puffin.core import yamlio
 from puffin.core.fsio import atomic_write
 from puffin.core.issues import Issue, Severity, sort_issues
 from puffin.core.models import ProjectModel, split_endpoint
+from puffin.core.scope import kicad_overwrite_warnings
 from puffin.core.validate import validate
 from puffin.library import PartLibrary
 
@@ -177,12 +178,22 @@ class Project:
             self._dirty = False
         return changed
 
-    def batch(self, ops: Sequence[Op | Mapping[str, Any]], *, dry_run: bool = False) -> EditResult:
+    def batch(
+        self,
+        ops: Sequence[Op | Mapping[str, Any]],
+        *,
+        dry_run: bool = False,
+        from_kicad: bool = False,
+    ) -> EditResult:
         """Apply operations in order to a copy, then judge the final state once.
 
         The batch is rejected as a whole if any operation fails or if the final state has
         errors that were not already present. Intermediate states are never validated, so
         a swap (two pins trading assignments) succeeds as one batch.
+
+        A batch that changes KiCad-managed connectivity gets a `kicad-overwrite` warning,
+        since the next import would revert it. Imports pass `from_kicad=True`: bringing the
+        graph in line with KiCad is their purpose.
         """
         parsed = [op if isinstance(op, Op) else Op.from_dict(op) for op in ops]
         operation = parsed[0].label if len(parsed) == 1 else f"batch({len(parsed)} ops)"
@@ -203,6 +214,8 @@ class Project:
         issues = self._issues(model)
         errors = [issue for issue in issues if issue.severity is Severity.ERROR]
         warnings = [issue for issue in issues if issue.severity is Severity.WARNING]
+        if not from_kicad:
+            warnings = kicad_overwrite_warnings(self.model, model) + warnings
         introduced = [issue for issue in errors if issue.key not in before]
         if introduced:
             return EditResult(False, operation, False, introduced, warnings)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from puffin.core import OPERATIONS, Op, Project
 
@@ -134,3 +135,61 @@ def test_single_edits_are_one_op_batches(project: Project) -> None:
         "unassign_pin", "move_pin", "add_override", "remove_override", "set_net",
         "rename_net", "remove_net", "set_component", "set_assignment_pin",
     }  # fmt: skip
+
+
+# --- kicad-overwrite ---------------------------------------------------------------------
+
+
+def overwrite_warnings(result: object) -> list[str]:
+    return [w.message for w in result.warnings if w.code == "kicad-overwrite"]  # type: ignore[attr-defined]
+
+
+def test_moving_a_managed_net_warns_kicad_overwrite(project: Project) -> None:
+    result = project.move_pin("U1", "GPIO10", "GPIO4", dry_run=True)
+    assert result.ok
+    [warning] = [w for w in result.warnings if w.code == "kicad-overwrite"]
+    assert warning.where == "kicad_schematic hw/robot/robot.kicad_sch"
+    assert warning.message == (
+        "this edit changes KiCad-managed net IMU_CS; the next KiCad import reverts it unless "
+        "the schematic changes too"
+    )
+    assert "puffin import kicad" in warning.hint
+
+
+def test_rename_and_component_changes_are_named(project: Project) -> None:
+    result = project.batch(
+        [Op("rename_net", {"old": "IMU_SCK", "new": "SPI_CLK"}),
+         Op("add_component", {"ref": "U4", "part": "example/spi-imu", "board": "main"})],
+        dry_run=True,
+    )  # fmt: skip
+    assert overwrite_warnings(result) == [
+        "this edit changes KiCad-managed nets IMU_SCK, SPI_CLK and component U4; the next "
+        "KiCad import reverts it unless the schematic changes too"
+    ]
+
+
+def test_graph_owned_edits_do_not_warn(project: Project) -> None:
+    """Assignments and overrides belong to the graph; KiCad never reverts them."""
+    result = project.batch(
+        [Op("unassign_pin", {"component": "U1", "peripheral": "gpio", "signal": "io.boot_button"})],
+        dry_run=True,
+    )
+    assert result.ok and overwrite_warnings(result) == []
+
+
+def test_imports_do_not_warn(project: Project) -> None:
+    result = project.move_pin("U1", "GPIO10", "GPIO4", dry_run=True)
+    assert overwrite_warnings(result)
+    imported = project.batch(
+        [Op("move_pin", {"component": "U1", "from_pin": "GPIO10", "to_pin": "GPIO4"})],
+        dry_run=True,
+        from_kicad=True,
+    )
+    assert overwrite_warnings(imported) == []
+
+
+def test_boards_without_a_schematic_do_not_warn(example_path: Path) -> None:
+    text = example_path.read_text().replace("    kicad_schematic: hw/robot/robot.kicad_sch\n", "")
+    example_path.write_text(text)
+    result = Project.load(example_path).move_pin("U1", "GPIO10", "GPIO4", dry_run=True)
+    assert result.ok and overwrite_warnings(result) == []

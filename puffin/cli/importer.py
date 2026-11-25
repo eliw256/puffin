@@ -10,10 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from puffin.core import Issue, Op, Project
+from puffin.core.scope import schematics
 from puffin.kicad import NetlistError, read_netlist
 from puffin.kicad.changes import ChangeSet, build_changes
 from puffin.kicad.export import KiCadCliError, export_netlist
-from puffin.kicad.state import STATE_PATH, record_sync, schematics
+from puffin.kicad.state import STATE_PATH, record_sync
 
 
 def _endpoints(items: tuple[str, ...]) -> str:
@@ -105,7 +106,9 @@ def cmd_import_kicad(
 
     ops: list[Op] = [op for changes in change_sets for op in changes.ops]
     import_errors = [issue for changes in change_sets for issue in changes.errors]
-    preview = project.batch(ops, dry_run=True) if ops and not import_errors else None
+    preview = (
+        project.batch(ops, dry_run=True, from_kicad=True) if ops and not import_errors else None
+    )
     introduced = (preview.errors if preview and not preview.ok else []) + import_errors
     in_sync = not ops and not import_errors
     payload: dict[str, Any] = {
@@ -166,7 +169,7 @@ def cmd_import_kicad(
             report("puffin import: cancelled, nothing applied")
             return 1
 
-    result = project.batch(ops)
+    result = project.batch(ops, from_kicad=True)
     if not result.ok:  # the project did not change since the preview, so this is a bug guard
         payload["ok"] = False
         payload["introduced_errors"] = [issue.to_dict() for issue in result.errors]

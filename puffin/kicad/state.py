@@ -20,7 +20,7 @@ from typing import Any
 
 from puffin.core import Issue, ProjectModel, Severity
 from puffin.core.fsio import atomic_write
-from puffin.core.models import split_endpoint
+from puffin.core.scope import managed_connectivity, schematics
 
 STATE_PATH = Path(".puffin") / "state.json"
 STATE_VERSION = 2
@@ -76,26 +76,6 @@ def read_state(project_dir: Path) -> dict[str, Any]:
     return data
 
 
-def managed_connectivity(model: ProjectModel, schematic: str) -> dict[str, Any]:
-    """What KiCad is authoritative for, canonicalized: the components on boards that use
-    `schematic`, and every net restricted to their pins. Assignments, constraints, overrides
-    and intent are graph-owned and deliberately excluded.
-    """
-    boards = {name for name, b in model.boards.items() if b.kicad_schematic == schematic}
-    owned = {ref for ref, c in model.components.items() if c.board in boards}
-    components = {
-        ref: [c.part, c.board, c.variant]
-        for ref, c in sorted(model.components.items())
-        if ref in owned
-    }
-    nets = {}
-    for name, endpoints in sorted(model.nets.items()):
-        mine = sorted({e for e in endpoints if split_endpoint(e)[0] in owned})
-        if mine:
-            nets[name] = mine
-    return {"components": components, "nets": nets}
-
-
 def graph_hash(model: ProjectModel, schematic: str) -> str:
     canonical = json.dumps(managed_connectivity(model, schematic), sort_keys=True)
     return hashlib.sha256(canonical.encode()).hexdigest()
@@ -120,11 +100,6 @@ def record_sync(project_dir: Path, schematic: str, model: ProjectModel) -> bool:
     (project_dir / STATE_PATH).parent.mkdir(exist_ok=True)
     atomic_write(project_dir / STATE_PATH, data)
     return True
-
-
-def schematics(model: ProjectModel) -> list[str]:
-    """Distinct `kicad_schematic` values, sorted. One import covers each."""
-    return sorted({b.kicad_schematic for b in model.boards.values() if b.kicad_schematic})
 
 
 _DRY_RUN_HINT = "run `puffin import kicad --dry-run` to see what an import would change"

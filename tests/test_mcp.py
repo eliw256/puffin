@@ -188,6 +188,8 @@ async def test_move_imu_cs_end_to_end(client: Client, example_path: Path) -> Non
     assert f"+  IMU_CS: [U1.{target}, U3.CS]" in proposal["diff"]
     assert f"+#define PUFFIN_SPI2_CS_IMU GPIO_NUM_{target[4:]}" in proposal["generated"][0]["diff"]
     assert f"U1.{target}" not in example_path.read_text()  # proposing writes nothing
+    [overwrite] = [w for w in proposal["warnings"] if w["code"] == "kicad-overwrite"]
+    assert "KiCad-managed net IMU_CS" in overwrite["message"]
 
     applied = await ok(client, "apply_edit", proposal_id=proposal["proposal_id"])
     assert applied["applied"] and applied["changed_artifacts"] == ["puffin.yaml"]
@@ -294,6 +296,7 @@ async def test_import_proposal_applies_and_records_sync(
     proposal = await ok(client, "propose_import_kicad")
     assert not proposal["in_sync"]
     assert proposal["schematics"][0]["assignment_fixes"][0]["new_pin"] == "GPIO14"
+    assert "kicad-overwrite" not in json.dumps(proposal)
     await ok(client, "apply_edit", proposal_id=proposal["proposal_id"])
     assert "IMU_SCK: [U1.GPIO14, U3.SCK]" in example_path.read_text()
     assert (await ok(client, "check"))["warnings"] == 0  # a real sync: no drift either side

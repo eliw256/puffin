@@ -17,13 +17,14 @@ from typing import Any
 
 from puffin.core import Issue, Op, Project, ProjectLoadError, Severity, sort_issues
 from puffin.core.models import split_endpoint
+from puffin.core.scope import schematics
 from puffin.core.views import board_view
 from puffin.generators import check_generation, generate
 from puffin.generators.writer import apply_writes, plan_writes
 from puffin.kicad import NetlistError, read_netlist
 from puffin.kicad.changes import build_changes
 from puffin.kicad.export import KiCadCliError, export_netlist
-from puffin.kicad.state import drift_issues, record_sync, schematic_hash, schematics
+from puffin.kicad.state import drift_issues, record_sync, schematic_hash
 from puffin.library import PartDefinition, PartLoadError
 from puffin.mcp.docs import DocIndex, PathEscape, inside
 
@@ -371,11 +372,13 @@ class PuffinService:
 
     # --- proposals ----------------------------------------------------------------------
 
-    def _preview(self, project: Project, ops: list[dict[str, Any]]) -> dict[str, Any]:
+    def _preview(
+        self, project: Project, ops: list[dict[str, Any]], from_kicad: bool = False
+    ) -> dict[str, Any]:
         """Apply `ops` to a copy: the result, the YAML diff, and each header's diff."""
         before = project.dumps()
         clone = Project(project.path, before, project.library, project.checkers)
-        result = clone.batch(ops)
+        result = clone.batch(ops, from_kicad=from_kicad)
         after = clone.dumps() if result.ok else before
         diff = "".join(
             difflib.unified_diff(
@@ -474,7 +477,7 @@ class PuffinService:
             change_sets.append(build_changes(project.model, project.library, netlist, name))
         ops = [op.to_dict() for changes in change_sets for op in changes.ops]
         import_errors = [issue for changes in change_sets for issue in changes.errors]
-        preview = self._preview(project, ops)
+        preview = self._preview(project, ops, from_kicad=True)
         result = preview["result"]
         introduced = import_errors + ([] if result.ok else result.errors)
         base = sha256(project.dumps())
@@ -512,7 +515,7 @@ class PuffinService:
                     "stale-proposal", proposal_id, f"{name} changed since this proposal",
                     "call propose_import_kicad again",
                 )  # fmt: skip
-        result = project.batch(proposal.ops)
+        result = project.batch(proposal.ops, from_kicad=proposal.kind == "import")
         if not result.ok:  # cannot happen for an unchanged file; kept as a guard
             return {"ok": False, "applied": False, "errors": issues_json(result.errors)}
         if proposal.ops:

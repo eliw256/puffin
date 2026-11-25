@@ -233,6 +233,14 @@ and `[T]` an array.
 - `check_only` is `puffin gen --check`.
 - It refuses, with `ok: false` and the issues, while the graph has errors.
 
+**`kicad-overwrite` (added after M3 review).** Any batch that changes KiCad-managed
+connectivity (components on a board with `kicad_schematic`, or nets restricted to their pins)
+carries a `kicad-overwrite` warning naming the nets and components: the next import reverts
+the change unless the schematic changes too. It is computed in `Project.batch` by comparing
+managed connectivity before and after (`puffin/core/scope.py`), so the CLI, the Python API and
+MCP all see it. Imports pass `from_kicad=True` and never get it. This is data, not just a
+contract rule.
+
 ## 4. The `Op` schema
 
 `propose_edit.ops` is a list of objects, each with an `"op"` discriminator. The input schema is a
