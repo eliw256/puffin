@@ -1,6 +1,6 @@
 # M2: KiCad import, design note
 
-Status: proposal for review. No importer code exists yet.
+Status: approved 2026-11-25, with the resolutions at the end of this note.
 
 Format facts below were checked against `kicad-cli` 9.0.0 (`sch export netlist`, format
 `kicadsexpr`, netlist version `"E"`). Anything marked *confirm in Step 1* is checked again
@@ -127,10 +127,14 @@ cheap, needs no KiCad, and gives a warning, never an error.
 
 ## Other decisions
 
-- **Series passives break nets.** If IMU_SCK runs through a series resistor, KiCad reports two
-  nets, and with the resistor unmanaged the graph sees two half-nets. v0 imports them as-is: the
-  MCU side keeps the labelled net, and the far side becomes an `AUTO(…)` net. Treating 2-pin
-  passives as pass-through is a possible v1 feature, not M2.
+- **Series passives break nets: detected in M2, pass-through is v1.** If IMU_SCK runs through a
+  series resistor, KiCad reports two nets, and with the resistor unmanaged the graph sees two
+  half-nets. They import as-is: the labelled side keeps its name and an unlabelled far side
+  becomes `AUTO(…)`. The change set warns whenever an unmanaged symbol with exactly two connected
+  pins bridges two nets that each have at least one managed endpoint, naming the symbol, its
+  library part, and both nets. For example: `IMU_SCK is split by R5 (Device:R); the far side
+  imports as AUTO(U3.SCK)`. If a constraint is on one of the halves, the warning says which half
+  it applies to. "Connected" excludes `unconnected-(…)` pins.
 - **Ownership by schematic.** A graph component belongs to schematic S if its board's
   `kicad_schematic` is S. Only those components can be removed by importing S. A reference
   designator in S that belongs to a board with a different schematic is an error.
@@ -145,10 +149,11 @@ cheap, needs no KiCad, and gives a warning, never an error.
   (`+3V3` or `VCC_3V3` rather than `3V3`), and buttons and resistors become unmanaged. I'll align
   `puffin.yaml` to the schematic and show you the diff before committing.
 
-## Open questions
+## Resolutions
 
-1. Is the `AUTO(U1.GPIO4,U3.INT)` name format for unlabelled nets acceptable? The name is
-   quoted in YAML.
-2. Should an import that would introduce errors be rejected outright, as proposed, or offer an
-   explicit `--allow-errors` that imports and leaves `puffin check` red?
-3. Do you agree with committing `.puffin/state.json`?
+1. `AUTO(U1.GPIO4,U3.INT)` names for unlabelled nets: approved.
+2. No `--allow-errors`. An import that would introduce errors is rejected whole, and the preview
+   lists those errors so the graph side can be fixed first.
+3. `.puffin/state.json` is committed.
+4. Added to scope: series-passive detection (see Other decisions). Its test uses a hand-edited
+   variant of the netlist fixture.
