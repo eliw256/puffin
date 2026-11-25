@@ -24,8 +24,9 @@ Order
     moving one pin changes exactly one line.
 
 Checks
-    ``preflight`` reports non-GPIO pins, define-name collisions, and non-ASCII text in
-    fields that reach the header. ``render`` assumes it found no errors.
+    ``preflight`` reports non-GPIO pins and define-name collisions as errors. ``render``
+    assumes it found none. Identifiers are always ASCII; in comments each non-ASCII
+    character becomes ``?`` and preflight warns, naming the field.
 
 Cross-board links
     A net is listed when this board's MCU and another board's MCU both have a non-power pin
@@ -153,8 +154,9 @@ class EspIdfGenerator:
                     gen_issue(
                         "non-ascii",
                         where,
-                        f"contains non-ASCII text: {text!a}",
-                        "use plain ASCII in this field",
+                        f"contains non-ASCII text {text!a}; each non-ASCII character is"
+                        " written as '?' in the header",
+                        "use plain ASCII in this field to keep the text as written",
                     )
                 )
         return issues

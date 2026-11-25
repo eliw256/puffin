@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from puffin.core import Project
+from puffin.core import Project, Severity
 from puffin.generators import GENERATION_CODES, GenerationResult, generate
 from puffin.generators.espidf import _arrow, define_name
 from puffin.library import PartLibrary
@@ -241,7 +241,35 @@ def test_every_generation_code_has_a_case() -> None:
 def test_generation_code(code: str, example_path: Path) -> None:
     result = CODE_CASES[code](example_path)
     assert code in {issue.code for issue in result.issues}
-    assert result.files == [] and not result.ok
+    if GENERATION_CODES[code] is Severity.ERROR:
+        assert result.files == [] and not result.ok
+    else:
+        assert result.ok and result.files
+
+
+def test_non_ascii_is_replaced_and_warned_per_field(example_path: Path) -> None:
+    project = edited(
+        example_path,
+        ("project: robot-mainboard", "project: robot-m\u00e4inboard"),
+        ("LINK_MAIN_TX", "LINK_MAIN_\u2192TX"),
+        ("note: boot button, intentional", "note: caf\u00e9 button"),
+    )
+    result = run(project)
+    assert result.ok
+    warned = {(i.code, i.severity, i.where) for i in result.issues}
+    assert warned == {
+        ("non-ascii", Severity.WARNING, "project"),
+        ("non-ascii", Severity.WARNING, "nets.LINK_MAIN_\u2192TX"),
+        ("non-ascii", Severity.WARNING, "overrides[0].note"),
+    }
+    main = by_board(result)["main"]
+    assert main.isascii()
+    text = main.decode()
+    assert " * project: robot-m?inboard" in text
+    assert "#define PUFFIN_UART1_TX GPIO_NUM_17 /* net LINK_MAIN_?TX */" in text
+    assert "/* net BOOT_MAIN; override strapping: caf? button */" in text
+    assert " * LINK_MAIN_?TX: U1.GPIO17 (uart1.tx) -> motor U2.GPIO18 (uart1.rx)" in text
+    assert by_board(result)["motor"].isascii()
 
 
 @pytest.mark.parametrize("path", ["/abs/pins.h", "../x.h", "a/../../x.h", "C:/x.h", "a\\b.h", ""])
