@@ -1,6 +1,6 @@
 # M4: Web UI, design note
 
-Status: draft for review. No UI code until this is approved.
+Status: approved 2026-11-25, with the resolutions at the end.
 
 Sources: PUFFIN_SPEC.md §6 (M4) and §7 (visual identity), DECISIONS 11.1 (Tauri shell), and the
 M3 and write-back notes.
@@ -259,15 +259,18 @@ throwaway.
     for an MCP process), handled with "Propose again".
 - **Not yet:** pixel snapshots.
 
-## Open questions
+## Resolutions (review, 2026-11-25)
 
-1. **Svelte 5** (smallest code) over React (larger ecosystem, more fluent AI output)?
-2. **Committing the built bundle** so users never need Node, with a test that catches a stale
-   bundle?
-3. **Dragging moves the whole pin (`move_pin`).** A pin carrying two assignments moves both.
-   Should a drag move only the dragged assignment (`set_assignment_pin`, leaving the net
-   behind)? For KiCad-managed nets that would break the net/assignment link, so I recommend
-   `move_pin`.
-4. **Undo stores inverse ops in history from now on.** Older entries can't be undone. OK?
-5. **`docs/BACKLOG.md`:** please add it, or confirm the prompt's description covers the M4
-   items.
+1. **Svelte 5, with a mechanical guard against Svelte 4 syntax.**
+   - Components compile in forced runes mode, so `export let` and `$:` are compile errors.
+   - `svelte-check --fail-on-warnings` makes the deprecated `on:` directive fail.
+   - A lint script (`web/scripts/check-svelte5.mjs`) fails on all three patterns explicitly.
+   - A pytest test runs both. It's skipped, with the reason, when Node or `web/node_modules` is
+     missing.
+2. **The built bundle is committed,** with the stale-bundle hash test, and `puffin/web/static/`
+   is marked `linguist-generated` in `.gitattributes`.
+3. **Drag means `move_pin`.** A pin carrying two assignments is already a validation error
+   (`pin-double-assigned`), so on a valid graph a drag moves exactly one assignment plus its net.
+4. **Undo** covers entries applied from M4 on. Older history entries show "can't undo".
+5. **`docs/BACKLOG.md` is created.** Nothing in it is M4 scope except the write-back choice UX,
+   which §e covers.
