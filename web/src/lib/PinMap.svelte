@@ -261,20 +261,84 @@
     return [align.e + align.a * x - (wrapRect?.left ?? 0), align.f + align.a * y - (wrapRect?.top ?? 0)];
   }
 
+  // The tooltip never covers pin rows: it goes outward, beyond the whole column of rows on the
+  // hovered pin's side, or else into a corner of the map; the first spot that fits and touches
+  // no row wins (if none is clear, the one overlapping least).
+  let wrapW = $state(0);
+  let wrapH = $state(0);
+  let tipW = $state(0);
+  let tipH = $state(0);
+  const TIP_GAP = 12;
+  const ZOOM_BAR = 44; // the zoom buttons' strip at the top right
+
+  type Rect = { x: number; y: number; w: number; h: number };
+  function clientRect(b: Box): Rect {
+    const [x0, y0] = clientOf(b.x, b.y);
+    const [x1, y1] = clientOf(b.x + b.w, b.y + b.h);
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  function overlap(a: Rect, b: Rect): number {
+    const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    return w > 0 && h > 0 ? w * h : 0;
+  }
+  const side = (r: Row) => (r.dir[0] < 0 ? "left" : r.dir[0] > 0 ? "right" : r.dir[1] < 0 ? "top" : "bottom");
+
   const tip = $derived.by(() => {
     if (!tooltip) return null;
-    const box = rowBox(tooltip.row);
-    const [left, top] = clientOf(box.x, box.y);
-    const [right, bottom] = clientOf(box.x + box.w, box.y + box.h);
-    const above = top > 130;
-    const leftSide = tooltip.row.dir[0] <= 0;
-    return {
-      info: tooltip.row.info!,
-      name: tooltip.row.name,
-      x: leftSide ? left : right,
-      y: above ? top - 8 : bottom + 8,
-      transform: `translate(${leftSide ? "0" : "-100%"}, ${above ? "-100%" : "0"})`,
-    };
+    const row = tooltip.row;
+    const w = tipW || 340;
+    const h = tipH || 120;
+    const rowRects = rows.filter((r) => r.info).map((r) => clientRect(rowBox(r)));
+    const here = clientRect(rowBox(row));
+    const s = side(row);
+    const column = rows.filter((r) => side(r) === s).map((r) => clientRect(rowBox(r)));
+    const colX0 = Math.min(...column.map((r) => r.x));
+    const colX1 = Math.max(...column.map((r) => r.x + r.w));
+    const colY0 = Math.min(...column.map((r) => r.y));
+    const colY1 = Math.max(...column.map((r) => r.y + r.h));
+    const clampY = (y: number) => Math.min(Math.max(y, ZOOM_BAR), wrapH - h - 8);
+    const clampX = (x: number) => Math.min(Math.max(x, 8), wrapW - w - 8);
+    const midY = here.y + here.h / 2 - h / 2;
+    const midX = here.x + here.w / 2 - w / 2;
+    const outward: Rect =
+      s === "left" ? { x: colX0 - TIP_GAP - w, y: clampY(midY), w, h }
+      : s === "right" ? { x: colX1 + TIP_GAP, y: clampY(midY), w, h }
+      : s === "top" ? { x: clampX(midX), y: colY0 - TIP_GAP - h, w, h }
+      : { x: clampX(midX), y: colY1 + TIP_GAP, w, h };  // fmt: skip
+    const corners: Rect[] = [
+      { x: 8, y: 8, w, h },
+      { x: wrapW - w - 8, y: ZOOM_BAR, w, h },
+      { x: 8, y: wrapH - h - 8, w, h },
+      { x: wrapW - w - 8, y: wrapH - h - 8, w, h },
+    ];
+    if (s === "right" || s === "bottom") corners.unshift(corners.splice(1, 1)[0]);
+    const fits = (c: Rect) => c.x >= 0 && c.y >= 0 && c.x + c.w <= wrapW && c.y + c.h <= wrapH;
+    const cost = (c: Rect) => rowRects.reduce((sum, r) => sum + overlap(c, r), 0) + (fits(c) ? 0 : 1e9);
+    let best: Rect | undefined = [outward, ...corners].find((c) => cost(c) === 0);
+    if (!best) {
+      // Zoomed in, the rows can fill the map: take the clear spot nearest the pin (often the
+      // empty middle of the symbol body), scanning the map on a coarse grid.
+      const near = (c: Rect) => Math.hypot(c.x + w / 2 - (here.x + here.w / 2), c.y + h / 2 - (here.y + here.h / 2));
+      let nearest: { c: Rect; d: number } | null = null;
+      for (let y = ZOOM_BAR; y + h <= wrapH - 4; y += 12)
+        for (let x = 4; x + w <= wrapW - 4; x += 12) {
+          const c = { x, y, w, h };
+          if (rowRects.some((r) => overlap(c, r) > 0)) continue;
+          const d = near(c);
+          if (!nearest || d < nearest.d) nearest = { c, d };
+        }
+      best = nearest?.c;
+    }
+    const origin = wrap?.getBoundingClientRect() ?? { left: 0, top: 0 };
+    if (!best) {
+      // Nowhere in the map is clear: show it beside the map (over the side panel) if it fits.
+      const beside = { x: wrapW + 8, y: ZOOM_BAR, w, h };
+      best = origin.left + beside.x + w <= window.innerWidth - 4 ? beside
+        : [outward, ...corners].reduce((a, c) => (cost(c) < cost(a) ? c : a));  // fmt: skip
+    }
+    // fixed, in page coordinates, so it can leave the map's clipped box
+    return { info: row.info!, name: row.name, x: origin.left + best.x, y: origin.top + best.y, measured: tipW > 0 };
   });
 
   // ---- pointer: select on down, drag only past a threshold, Escape cancels ----
@@ -400,7 +464,7 @@
   }
 </script>
 
-<div class="wrap" bind:this={wrap}>
+<div class="wrap" bind:this={wrap} bind:clientWidth={wrapW} bind:clientHeight={wrapH}>
   <svg
     bind:this={svg}
     class="pinmap"
@@ -571,7 +635,8 @@
   </div>
 
   {#if tip && !drag}
-    <div class="tooltip" role="tooltip" style="left: {tip.x}px; top: {tip.y}px; transform: {tip.transform}">
+    <div class="tooltip" role="tooltip" bind:offsetWidth={tipW} bind:offsetHeight={tipH}
+         style="left: {tip.x}px; top: {tip.y}px; visibility: {tip.measured ? 'visible' : 'hidden'}">
       <div class="tip-head mono"><strong>{tip.info.pin}</strong> · {tip.name} · pin {tip.info.numbers.join(", ")}</div>
       <div class="tip-doing">{doing(tip.info)}</div>
       <div class="tip-family">{FAMILY_LABEL[tip.info.family]}{tip.info.flags.length ? ` · ⚑ ${tip.info.flags.join(", ")}` : ""}</div>
@@ -786,8 +851,9 @@
     color: var(--muted);
   }
   .tooltip {
-    position: absolute;
+    position: fixed;
     z-index: 3;
+    width: max-content; /* its size must not depend on where it is placed */
     max-width: 340px;
     padding: 8px 10px;
     background: var(--surface);

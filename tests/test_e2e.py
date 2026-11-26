@@ -262,3 +262,46 @@ def test_selection_encloses_the_whole_row_with_padding(
             "bottom": box["y"] + box["height"] - (part["y"] + part["height"]),
         }
         assert min(margins.values()) >= 6, (pin, parts.nth(i).text_content(), margins)
+
+
+@pytest.mark.parametrize(
+    "pin", ["GPIO10", "GPIO17", "3V3", "GND", "EN"]
+)  # left, right, top, bottom
+@pytest.mark.parametrize("zoom_in", [0, 2])
+def test_tooltip_never_covers_pin_rows(
+    page: playwright.Page, ui: UI, pin: str, zoom_in: int
+) -> None:
+    open_ui(page, ui)
+    for _ in range(zoom_in):
+        page.get_by_role("button", name="Zoom in").click()
+    hit = page.locator(f'g[data-pin="{pin}"] .hit').bounding_box()
+    wrap = page.locator(".wrap").bounding_box()
+    assert hit and wrap
+    if not wrap["y"] < hit["y"] + hit["height"] / 2 < wrap["y"] + wrap["height"]:
+        pytest.skip(f"{pin} is scrolled out of the map at this zoom")
+    page.mouse.move(hit["x"] + hit["width"] / 2, hit["y"] + hit["height"] / 2)
+    tooltip = page.locator(".tooltip")
+    tooltip.wait_for(state="visible")
+    page.wait_for_function(
+        "getComputedStyle(document.querySelector('.tooltip')).visibility === 'visible'"
+    )
+    tip = tooltip.bounding_box()
+    assert tip
+    rows = page.locator("g.pin[data-pin] .hit")
+    for i in range(rows.count()):
+        box = rows.nth(i).bounding_box()
+        assert box
+        # only the part of a row inside the map is visible; the map clips the rest
+        x0, y0 = max(box["x"], wrap["x"]), max(box["y"], wrap["y"])
+        x1 = min(box["x"] + box["width"], wrap["x"] + wrap["width"])
+        y1 = min(box["y"] + box["height"], wrap["y"] + wrap["height"])
+        if x1 <= x0 or y1 <= y0:
+            continue
+        row = {"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0}
+        overlaps = (
+            tip["x"] < row["x"] + row["width"]
+            and row["x"] < tip["x"] + tip["width"]
+            and tip["y"] < row["y"] + row["height"]
+            and row["y"] < tip["y"] + tip["height"]
+        )
+        assert not overlaps, (pin, rows.nth(i).get_attribute("aria-label"), tip, row)
