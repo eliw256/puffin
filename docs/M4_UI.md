@@ -315,7 +315,7 @@ throwaway.
   - The family-to-swatch mapping is **provisional** until you pick from the swatch sheet
     (`npm run swatches`).
 - **Pin descriptions** come from the datasheet, verbatim (`description`,
-  `pin_description_source`), and show in the tooltip and the detail panel with their citation.
+  `pin_description_cite`, cited per pin by table row, e.g. "Table 3-1, pin 3 (EN)"), and show in the tooltip and the detail panel with their citation.
 
 ## Steps 3+ (as built)
 

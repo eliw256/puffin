@@ -32,6 +32,15 @@ def test_query_pins_reports_each_pins_family(example_path: Path) -> None:
                    "GND": "ground"}  # fmt: skip
 
 
+def test_query_pins_cites_each_description_by_its_own_row(example_path: Path) -> None:
+    pins = {p["pin"]: p for p in PuffinService(example_path).query_pins("U1")["pins"]}
+    doc = "ESP32-S3-WROOM-1 DS v1.8"
+    assert pins["EN"]["description_cite"] == {"document": doc, "location": "Table 3-1, pin 3 (EN)"}
+    assert pins["GPIO36"]["description_cite"]["location"] == "Table 3-1, pin 29 (IO36), note b"
+    imu = PuffinService(example_path).query_pins("U3")["pins"]
+    assert all(p["description_cite"] is None for p in imu)  # no descriptions, no citation
+
+
 def test_symbol_view_uses_the_schematic_symbol(example_path: Path) -> None:
     view = PuffinService(example_path).symbol_view("U1")
     assert view["source"] == "schematic"

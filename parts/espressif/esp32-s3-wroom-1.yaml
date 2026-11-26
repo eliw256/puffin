@@ -9,7 +9,8 @@ supply: {nominal_v: 3.3, min_v: 3.0, max_v: 3.6}  # module datasheet v1.8, Table
 sources:
   - "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8 (2026-03-02): Tables 1-1, 1-2, 3-1, 4-1, 6-2"
   - "ESP32-S3 Series Datasheet v2.2: Section 2.3.4, Section 2.3.5, Tables 2-4, 2-9, 2-14"
-pin_description_source: "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48"
+# Pin descriptions: Table 3-1 Function column, verbatim; notes b and c appended to IO35-37 and IO47-48.
+pin_description_cite: {document: "ESP32-S3-WROOM-1 DS v1.8", table: "Table 3-1"}
 docs:
   datasheet: docs/esp32-s3-wroom-1.md
   source_url: https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf
@@ -176,6 +177,7 @@ pins:
     numbers: [24]
     datasheet_name: IO47
     description: "SPICLK_P_DIFF,GPIO47, SUBSPICLK_P_DIFF. Note: For modules embedded with ESP32-S3R16V, as the VDD_SPI voltage of the ESP32-S3R16V chip is set to 1.8 V, the working voltage for GPIO47 and GPIO48 is also 1.8 V, which is different from other GPIOs."
+    description_note: "note c"
     type: I/O/T
     functions: [spiclk_p_diff, gpio, subspiclk_p_diff]
     flags: []
@@ -183,6 +185,7 @@ pins:
     numbers: [25]
     datasheet_name: IO48
     description: "SPICLK_N_DIFF,GPIO48, SUBSPICLK_N_DIFF. Note: For modules embedded with ESP32-S3R16V, as the VDD_SPI voltage of the ESP32-S3R16V chip is set to 1.8 V, the working voltage for GPIO47 and GPIO48 is also 1.8 V, which is different from other GPIOs."
+    description_note: "note c"
     type: I/O/T
     functions: [spiclk_n_diff, gpio, subspiclk_n_diff]
     flags: []
@@ -204,6 +207,7 @@ pins:
     numbers: [28]
     datasheet_name: IO35
     description: "SPIIO6, GPIO35, FSPID, SUBSPID. Note: For modules with Octal SPI PSRAM, i.e., modules embedded with ESP32-S3R8 or ESP32-S3R16V, pins IO35, IO36, and IO37 are connected to the Octal SPI PSRAM and are not available for other uses."
+    description_note: "note b"
     type: I/O/T
     functions: [spiio6, gpio, spi2.mosi, subspid]
     flags: []
@@ -211,6 +215,7 @@ pins:
     numbers: [29]
     datasheet_name: IO36
     description: "SPIIO7, GPIO36, FSPICLK, SUBSPICLK. Note: For modules with Octal SPI PSRAM, i.e., modules embedded with ESP32-S3R8 or ESP32-S3R16V, pins IO35, IO36, and IO37 are connected to the Octal SPI PSRAM and are not available for other uses."
+    description_note: "note b"
     type: I/O/T
     functions: [spiio7, gpio, spi2.sck, subspiclk]
     flags: []
@@ -218,6 +223,7 @@ pins:
     numbers: [30]
     datasheet_name: IO37
     description: "SPIDQS, GPIO37, FSPIQ, SUBSPIQ. Note: For modules with Octal SPI PSRAM, i.e., modules embedded with ESP32-S3R8 or ESP32-S3R16V, pins IO35, IO36, and IO37 are connected to the Octal SPI PSRAM and are not available for other uses."
+    description_note: "note b"
     type: I/O/T
     functions: [spidqs, gpio, spi2.miso, subspiq]
     flags: []

@@ -52,7 +52,7 @@ export type PinInfo = {
   numbers: number[];
   datasheet_name: string | null;
   description: string | null; // verbatim from the datasheet
-  description_source: string | null;
+  description_cite: { document: string; location: string } | null; // e.g. "Table 3-1, pin 3 (EN)"
   type: string | null;
   rail: string | null;
   functions: string[];

@@ -31,7 +31,8 @@ class PartPin(_PartModel):
 
     numbers: list[int] = Field(default_factory=list)
     datasheet_name: str | None = None
-    description: str | None = None  # verbatim from the datasheet; see pin_description_source
+    description: str | None = None  # verbatim from the datasheet; see pin_description_cite
+    description_note: str | None = None  # a table note appended to the description, e.g. "note b"
     type: str | None = None
     rail: str | None = None
     functions: list[str] = Field(default_factory=list)
@@ -90,6 +91,16 @@ class PartDocs(_PartModel):
     source_url: str | None = None
 
 
+class DescriptionCite(BaseModel):
+    """The source of a part's pin descriptions: a short document name with its version
+    (e.g. "ESP32-S3-WROOM-1 DS v1.8") and the table they were copied from ("Table 3-1")."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    document: str
+    table: str
+
+
 class PartDefinition(_PartModel):
     id: str
     kind: str
@@ -100,14 +111,33 @@ class PartDefinition(_PartModel):
     flag_policy: dict[str, FlagPolicy] = Field(default_factory=dict)
     docs: PartDocs = Field(default_factory=PartDocs)
     sources: list[str] = Field(default_factory=list)
-    pin_description_source: str | None = None  # where pin descriptions were copied from
+    pin_description_cite: DescriptionCite | None = None  # where pin descriptions were copied from
     timing: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _descriptions_are_cited(self) -> PartDefinition:
-        if any(pin.description for pin in self.pins.values()) and not self.pin_description_source:
-            raise ValueError("pin descriptions need pin_description_source citing the datasheet")
+        if any(pin.description for pin in self.pins.values()) and not self.pin_description_cite:
+            raise ValueError("pin descriptions need pin_description_cite citing the datasheet")
+        noted = [
+            name for name, pin in self.pins.items() if pin.description_note and not pin.description
+        ]
+        if noted:
+            raise ValueError(f"description_note without a description on {', '.join(noted)}")
         return self
+
+    def description_cite(self, pin: str) -> dict[str, str] | None:
+        """Where this pin's description comes from: the document, and the table row by pin
+        number and datasheet name (plus any appended note), e.g. "Table 3-1, pin 3 (EN)"."""
+        definition = self.pins.get(pin)
+        if not definition or not definition.description or not self.pin_description_cite:
+            return None
+        numbers = ", ".join(str(n) for n in definition.numbers)
+        label = "pins" if len(definition.numbers) > 1 else "pin"
+        row = f"{label} {numbers} ({definition.datasheet_name or pin})"
+        location = f"{self.pin_description_cite.table}, {row}"
+        if definition.description_note:
+            location += f", {definition.description_note}"
+        return {"document": self.pin_description_cite.document, "location": location}
 
     def effective_flags(self, pin: str, variant: str | None) -> frozenset[str]:
         """Flags on `pin`. With no variant, assume every variant's restrictions."""

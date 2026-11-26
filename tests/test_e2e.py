@@ -305,3 +305,23 @@ def test_tooltip_never_covers_pin_rows(
             and row["y"] < tip["y"] + tip["height"]
         )
         assert not overlaps, (pin, rows.nth(i).get_attribute("aria-label"), tip, row)
+
+
+def test_tooltip_shows_the_pins_own_citation_in_full(page: playwright.Page, ui: UI) -> None:
+    open_ui(page, ui)
+    for pin, location in [
+        ("EN", "Table 3-1, pin 3 (EN)"),
+        ("GPIO47", "Table 3-1, pin 24 (IO47), note c"),
+    ]:
+        hit = page.locator(f'g[data-pin="{pin}"] .hit').bounding_box()
+        assert hit
+        page.mouse.move(hit["x"] + hit["width"] / 2, hit["y"] + hit["height"] / 2)
+        loc = page.locator(".tooltip .cite-loc")
+        loc.wait_for(state="visible")
+        assert loc.text_content() == f", {location}"
+        tip, box = page.locator(".tooltip").bounding_box(), loc.bounding_box()
+        assert tip and box
+        assert box["x"] + box["width"] <= tip["x"] + tip["width"]  # not cut off
+        assert loc.evaluate("e => e.scrollWidth <= e.clientWidth")  # not ellipsized
+        page.mouse.move(2, 2)
+        page.locator(".tooltip").wait_for(state="detached")

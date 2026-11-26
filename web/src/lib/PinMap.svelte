@@ -642,7 +642,9 @@
       <div class="tip-family">{FAMILY_LABEL[tip.info.family]}{tip.info.flags.length ? ` · ⚑ ${tip.info.flags.join(", ")}` : ""}</div>
       {#if tip.info.description}
         <div class="tip-desc mono">{tip.info.description}</div>
-        <div class="tip-cite">Datasheet: {tip.info.description_source}</div>
+        <div class="tip-cite">
+          <span class="cite-doc">{tip.info.description_cite?.document}</span><span class="cite-loc">, {tip.info.description_cite?.location}</span>
+        </div>
       {:else}
         <div class="tip-cite">No datasheet description for this part.</div>
       {/if}
@@ -884,11 +886,19 @@
     text-overflow: ellipsis;
   }
   .tip-cite {
+    display: flex;
     margin-top: 2px;
     font-size: 11px;
     color: var(--muted);
     white-space: nowrap;
+  }
+  /* only the document name may shorten; the table and pin reference is always shown in full */
+  .cite-doc {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .cite-loc {
+    flex-shrink: 0;
   }
 </style>

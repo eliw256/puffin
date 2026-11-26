@@ -251,7 +251,7 @@ class PuffinService:
                     "numbers": pin.numbers,
                     "datasheet_name": pin.datasheet_name,
                     "description": pin.description,
-                    "description_source": part.pin_description_source if pin.description else None,
+                    "description_cite": part.description_cite(name),
                     "type": pin.type,
                     "rail": pin.rail,
                     "functions": pin.functions,

@@ -22,7 +22,7 @@
   <section class="desc" aria-label="Datasheet description">
     {#if pin.description}
       <p class="mono">{pin.description}</p>
-      <p class="cite">Datasheet: {pin.description_source}</p>
+      <p class="cite">{pin.description_cite?.document}, {pin.description_cite?.location}</p>
     {:else}
       <p class="none">No datasheet description for this pin.</p>
     {/if}

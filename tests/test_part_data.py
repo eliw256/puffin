@@ -56,8 +56,8 @@ def test_every_wroom_pin_has_a_cited_verbatim_description() -> None:
     part = PartLibrary().get("espressif/esp32-s3-wroom-1")
     assert part is not None
     assert all(pin.description for pin in part.pins.values())
-    assert part.pin_description_source is not None
-    assert "Table 3-1" in part.pin_description_source
+    assert part.pin_description_cite is not None
+    assert part.pin_description_cite.table == "Table 3-1"
     assert part.pins["EN"].description == (
         "High: on, enables the chip. Low: off, the chip powers off. "
         "Note: Do not leave the EN pin floating."
@@ -76,7 +76,7 @@ def test_placeholder_imu_has_no_descriptions() -> None:
     imu = PartLibrary().get("example/spi-imu")
     assert imu is not None
     assert all(pin.description is None for pin in imu.pins.values())
-    assert imu.pin_description_source is None
+    assert imu.pin_description_cite is None
 
 
 def test_descriptions_without_a_source_are_rejected() -> None:
@@ -85,7 +85,41 @@ def test_descriptions_without_a_source_are_rejected() -> None:
 
     from puffin.library.models import PartDefinition
 
-    with pytest.raises(ValidationError, match="pin_description_source"):
+    with pytest.raises(ValidationError, match="pin_description_cite"):
         PartDefinition.model_validate(
             {"id": "x/y", "kind": "mcu", "pins": {"A": {"description": "made up"}}}
+        )
+
+
+def test_each_pin_description_cites_its_own_table_row() -> None:
+    from puffin.library import PartLibrary
+
+    part = PartLibrary().get("espressif/esp32-s3-wroom-1")
+    assert part is not None
+    doc = "ESP32-S3-WROOM-1 DS v1.8"
+    assert part.description_cite("EN") == {"document": doc, "location": "Table 3-1, pin 3 (EN)"}
+    assert part.description_cite("GND") == {
+        "document": doc,
+        "location": "Table 3-1, pins 1, 40, 41 (GND)",
+    }
+    assert part.description_cite("GPIO10") == {
+        "document": doc,
+        "location": "Table 3-1, pin 18 (IO10)",
+    }
+    # the variant notes appended to a description are cited with it (b: Octal PSRAM, c: 1.8 V)
+    assert part.description_cite("GPIO35")["location"].endswith("(IO35), note b")  # type: ignore[index]
+    assert part.description_cite("GPIO47")["location"].endswith("(IO47), note c")  # type: ignore[index]
+    noted = {n for n, p in part.pins.items() if p.description_note}
+    assert noted == {"GPIO35", "GPIO36", "GPIO37", "GPIO47", "GPIO48"}
+
+
+def test_a_description_note_needs_a_description() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    from puffin.library.models import PartDefinition
+
+    with pytest.raises(ValidationError, match="description_note without a description"):
+        PartDefinition.model_validate(
+            {"id": "x/y", "kind": "mcu", "pins": {"A": {"description_note": "note b"}}}
         )
