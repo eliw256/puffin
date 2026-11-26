@@ -132,7 +132,7 @@
       ]
     }
   },
-  "families_status": "proposed: every family differs in pattern geometry, and in greyscale lightness by about 6 L* or more; red share is kept at 25% so errors stay the only strong red",
+  "families_status": "chosen 2026-11-25: every family has its own pattern geometry, so families stay distinguishable in greyscale by shape; lightness separates them further except GPIO (checker) and SPI (v-lines), which are close in lightness by choice",
   "families": {
     "ground": {
       "a": "dark",
@@ -155,14 +155,14 @@
       "pattern": "bayer75"
     },
     "gpio": {
-      "a": "dark",
+      "a": "blue",
       "b": "bone",
       "pattern": "bayer50"
     },
     "spi": {
       "a": "cream",
       "b": "dark",
-      "pattern": "cross"
+      "pattern": "vlines"
     },
     "uart": {
       "a": "bone",

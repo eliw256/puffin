@@ -83,9 +83,10 @@
   <section>
     <h2>Proposed families, at pin-map size</h2>
     <p class="note">
-      Every family has a different pattern geometry, and lightness at least {minGap.toFixed(1)} L* from
-      its neighbour, so they stay apart in greyscale. Red is held to 25 % so an error's solid red
-      outline stays the strongest red on the map.
+      Every family has a different pattern geometry, so they stay apart in greyscale by shape;
+      lightness separates them further (smallest gap {minGap.toFixed(1)} L*, GPIO's checker vs SPI's
+      v-lines, chosen on purpose). Red is held to 25 % so an error's solid red outline stays the
+      strongest red on the map.
     </p>
     <table class="families">
       <thead>

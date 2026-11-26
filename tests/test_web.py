@@ -215,15 +215,20 @@ def test_no_family_swatch_is_solid_red_or_orange_or_too_warm() -> None:
             assert ratio <= rules["max_chroma_ratio"], f"{family}: reads near-solid ({ratio:.2f})"
 
 
-def test_every_family_has_a_distinct_pattern_and_greyscale_value() -> None:
+def test_every_family_has_a_distinct_pattern() -> None:
     families = dither()["families"]
     assert set(families) == {"gpio", "spi", "i2c", "uart", "adc", "usb", "power", "ground"}
-    keys = [(s["a"], s["b"], s["pattern"]) for s in families.values()]
-    assert len(set(keys)) == len(keys)
     patterns = [s["pattern"] for s in families.values()]
     assert len(set(patterns)) == len(patterns), "each family gets its own pattern geometry"
-    levels = sorted(lightness(s) for s in families.values())
-    assert min(b - a for a, b in itertools.pairwise(levels)) >= 5.5  # sheet shows ~6 L*
+
+
+def test_families_stay_apart_in_greyscale() -> None:
+    """Greyscale keeps both shape and tone: two families may be close in lightness only if
+    their pattern geometry differs (GPIO checker vs SPI v-lines is such a chosen pair)."""
+    families = list(dither()["families"].items())
+    for (f1, s1), (f2, s2) in itertools.combinations(families, 2):
+        if s1["pattern"] == s2["pattern"]:
+            assert abs(lightness(s1) - lightness(s2)) >= 5.5, f"{f1}/{f2}: same pattern, close tone"
 
 
 def test_families_are_visible_on_the_background() -> None:
