@@ -284,6 +284,51 @@ def test_bundle_is_complete_and_licensed() -> None:
     for asset in referenced:
         assert (STATIC / asset).is_file(), asset
     assert not re.search(r"data:font", " ".join(p.read_text() for p in STATIC.glob("assets/*.css")))
-    assert "Eclipse Public License" in (STATIC / "ELKJS-LICENSE.md").read_text()
+    assert "Eclipse Public License" in (STATIC / "licenses" / "elkjs-LICENSE.md").read_text()
     attributes = (Path(__file__).parents[1] / ".gitattributes").read_text()
     assert "puffin/web/static/** linguist-generated=true" in attributes
+
+
+# --- third-party notices ----------------------------------------------------------------------
+
+NOTICES = Path(__file__).parents[1] / "THIRD_PARTY_NOTICES.md"
+
+
+def locked_version(package: str) -> str:
+    import json
+
+    lock = json.loads((WEB / "package-lock.json").read_text())
+    return str(lock["packages"][f"node_modules/{package}"]["version"])
+
+
+def test_notices_name_every_bundled_package_at_its_locked_version() -> None:
+    text = NOTICES.read_text()
+    for package, label in (("elkjs", "elkjs"), ("svelte", "Svelte runtime"),
+                           ("@fontsource/inter", "Inter"),
+                           ("@fontsource/jetbrains-mono", "JetBrains Mono")):  # fmt: skip
+        version = locked_version(package)
+        assert label in text and version in text, f"{package} {version} missing from notices"
+    assert "EPL-2.0" in text and "unmodified" in text
+
+
+def test_licence_texts_ship_with_the_bundle() -> None:
+    licenses = STATIC / "licenses"
+    assert "Eclipse Public License" in (licenses / "elkjs-LICENSE.md").read_text()
+    assert "Permission is hereby granted" in (licenses / "svelte-LICENSE.md").read_text()
+    for font in ("inter-OFL.txt", "jetbrains-mono-OFL.txt"):
+        assert "SIL OPEN FONT LICENSE" in (licenses / font).read_text().upper()
+    assert (licenses / "THIRD_PARTY_NOTICES.md").read_text() == NOTICES.read_text(), (
+        "bundle notice is stale: run `npm run build` in web/"
+    )
+
+
+def test_elkjs_is_a_separate_lazily_loaded_file_with_its_licence_banner() -> None:
+    [elk] = list((STATIC / "assets").glob("elkjs-*.js"))
+    version = locked_version("elkjs")
+    assert elk.read_text().startswith(
+        f"/*! elkjs {version} (Eclipse Layout Kernel), used unmodified under EPL-2.0"
+    )
+    index = (STATIC / "index.html").read_text()
+    assert "elkjs-" not in index, "elkjs must not be preloaded with the app"
+    app_code = " ".join(p.read_text() for p in (STATIC / "assets").glob("index-*.js"))
+    assert "org.eclipse.elk" not in app_code, "elkjs code leaked into the app chunk"

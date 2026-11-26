@@ -197,3 +197,20 @@ def test_acceptance_round_trip_with_kicad(page: playwright.Page, ui: UI) -> None
     playwright.expect(drift).to_have_count(0)
     assert "PUFFIN_SPI2_CS_IMU GPIO_NUM_10" in (ui.root / HEADER).read_text()
     assert PuffinService(ui.path).check()["warnings"] == 0
+
+
+SPI_BUS = "SPI2 ×4: IMU_CS, IMU_MISO, IMU_MOSI, IMU_SCK"  # noqa: RUF001 (the UI's real label)
+
+
+def test_block_diagram_loads_elkjs_on_demand(page: playwright.Page, ui: UI) -> None:
+    loaded: list[str] = []
+    page.on("request", lambda request: loaded.append(request.url))
+    open_ui(page, ui)
+    assert not [u for u in loaded if "/assets/elkjs-" in u], "elkjs must not load with the pin map"
+    page.get_by_role("button", name="Block diagram").click()
+    playwright.expect(page.locator(".node")).to_have_count(3, timeout=10000)
+    playwright.expect(page.get_by_role("button", name=SPI_BUS)).to_be_visible()
+    assert [u for u in loaded if "/assets/elkjs-" in u], "elkjs should load when the view opens"
+    page.get_by_role("button", name=SPI_BUS).click()
+    page.get_by_role("button", name="Pin map").click()
+    playwright.expect(page.locator(".highlight")).to_have_count(4)  # the bus's pins are outlined

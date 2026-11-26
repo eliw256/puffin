@@ -10,6 +10,12 @@ export default defineConfig({
     outDir: "../puffin/web/static",
     emptyOutDir: true,
     assetsInlineLimit: 0, // fonts as files: the CSP allows font-src 'self', never data: URIs
-    rollupOptions: { input: { index: "index.html" } },
+    rollupOptions: {
+      input: { index: "index.html" },
+      output: {
+        // elkjs (EPL-2.0) in a file of its own, so the licence boundary is a file boundary.
+        manualChunks: (id: string) => (id.includes("/node_modules/elkjs/") ? "elkjs" : undefined),
+      },
+    },
   },
 });

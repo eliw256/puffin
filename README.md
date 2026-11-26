@@ -119,4 +119,6 @@ See [docs/WRITEBACK.md](docs/WRITEBACK.md). See
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The built web UI also ships third-party code and fonts under their
+own licences (elkjs under EPL-2.0, Svelte under MIT, Inter and JetBrains Mono under the SIL Open
+Font License); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -240,8 +240,9 @@ def create_app(project: Path, token: str, port: int) -> ASGIApp:
         Route("/api/events", events),
         Route("/", index),
     ]
-    if (STATIC / "assets").is_dir():
-        routes.append(Mount("/assets", app=StaticFiles(directory=STATIC / "assets")))
+    for folder in ("assets", "licenses"):  # static, no project data: served without the token
+        if (STATIC / folder).is_dir():
+            routes.append(Mount(f"/{folder}", app=StaticFiles(directory=STATIC / folder)))
     return Guard(Starlette(routes=routes), port=port, token=token)
 
 

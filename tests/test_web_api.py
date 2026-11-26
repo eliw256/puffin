@@ -234,3 +234,9 @@ def test_events_report_schematic_and_checkpoint_changes(
         return out
 
     assert '{"type": "schematic"}' in "".join(asyncio.run(collect()))
+
+
+def test_licences_are_served(client: TestClient) -> None:
+    response = client.get("/licenses/elkjs-LICENSE.md")
+    assert response.status_code == 200 and "Eclipse Public License" in response.text
+    assert response.headers["x-content-type-options"] == "nosniff"

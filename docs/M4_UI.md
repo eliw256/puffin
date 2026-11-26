@@ -345,8 +345,9 @@ throwaway.
   it.
   - Edges within one board are shifted by that board's position, because ELK reports them
     relative to their container.
-  - **ELK is EPL-2.0 OR GPL-3.0-or-later,** not MIT. Its licence ships in
-    `puffin/web/static/ELKJS-LICENSE.md`. dagre (MIT) is the fallback if that's unwanted.
+  - **ELK is used under EPL-2.0** (decided 2026-11-26). It is built into a file of its own
+    (`assets/elkjs-*.js`), which carries a banner naming the licence and its source. All
+    third-party licences ship in `puffin/web/static/licenses/`; see `THIRD_PARTY_NOTICES.md`.
 - **Bundle:** `npm run build` (in `web/`) writes `puffin/web/static/` with `SOURCE_HASH`; a
   test fails on a stale bundle. Fonts are emitted as files (`assetsInlineLimit: 0`) because the
   CSP allows `font-src 'self'` and no `data:` URIs.
