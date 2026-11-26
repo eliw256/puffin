@@ -225,6 +225,24 @@ class Project:
             self._dirty = True
         return EditResult(True, operation, not dry_run, errors, warnings, [self.path.name])
 
+    def inverse(self, ops: Sequence[Op | Mapping[str, Any]]) -> list[dict[str, Any]] | None:
+        """Operations that undo `ops` from the current document, or None if `ops` don't apply.
+
+        Each op's inverse is computed against the document as it is just before that op, so
+        lossy ops (set_net, remove_net, set_component, ...) restore their old values. Undo is a
+        normal proposal of these ops, never a raw file revert (docs/M4_UI.md §h).
+        """
+        document = copy.deepcopy(self._document)
+        per_op: list[list[dict[str, Any]]] = []
+        for raw in ops:
+            op = raw if isinstance(raw, Op) else Op.from_dict(raw)
+            try:
+                per_op.append(_inverse_of(_parse_model(document), op))
+                _apply(document, op)
+            except (_Rejected, ValidationError, KeyError, StopIteration):
+                return None
+        return [inverse for group in reversed(per_op) for inverse in group]
+
     @staticmethod
     def _rejected(operation: str, message: str, hint: str) -> EditResult:
         issue = Issue(Severity.ERROR, "edit-rejected", operation, message, hint)
@@ -354,6 +372,50 @@ class Op:
             return f"{self.op}({subject.format(**a)})"
         except (KeyError, IndexError):
             return f"{self.op}(...)"
+
+
+def _inverse_of(model: ProjectModel, op: Op) -> list[dict[str, Any]]:
+    """The ops that undo one op, given the model just before it."""
+    a = op.args
+    match op.op:
+        case "add_component":
+            return [{"op": "remove_component", "ref": a["ref"]}]
+        case "remove_component" | "set_component":
+            old = model.components.get(a["ref"])
+            if old is None:
+                return [{"op": "remove_component", "ref": a["ref"]}]
+            return [{"op": "set_component" if op.op == "set_component" else "add_component",
+                     "ref": a["ref"], "part": old.part, "board": old.board,
+                     "variant": old.variant}]  # fmt: skip
+        case "connect":
+            return [{"op": "disconnect", "net": a["net"], "endpoints": list(a["endpoints"])}]
+        case "disconnect":
+            return [{"op": "connect", "net": a["net"], "endpoints": list(a["endpoints"])}]
+        case "set_net" | "remove_net":
+            old_eps = model.nets.get(a["name"])
+            if old_eps is None:
+                return [{"op": "remove_net", "name": a["name"]}]
+            return [{"op": "set_net", "name": a["name"], "endpoints": list(old_eps)}]
+        case "rename_net":
+            return [{"op": "rename_net", "old": a["new"], "new": a["old"]}]
+        case "assign_pin":
+            return [{"op": "unassign_pin", "component": a["component"],
+                     "peripheral": a["peripheral"], "signal": a["signal"]}]  # fmt: skip
+        case "unassign_pin" | "set_assignment_pin":
+            old_pin = model.assignments[a["component"]][a["peripheral"]][a["signal"]]
+            return [{"op": "assign_pin" if op.op == "unassign_pin" else "set_assignment_pin",
+                     "component": a["component"], "peripheral": a["peripheral"],
+                     "signal": a["signal"], "pin": old_pin}]  # fmt: skip
+        case "move_pin":
+            return [{"op": "move_pin", "component": a["component"], "from_pin": a["to_pin"],
+                     "to_pin": a["from_pin"]}]  # fmt: skip
+        case "add_override":
+            return [{"op": "remove_override", "pin": a["pin"], "allow": a["allow"]}]
+        case "remove_override":
+            note = next(o.note for o in model.overrides
+                        if o.pin == a["pin"] and o.allow == a["allow"])  # fmt: skip
+            return [{"op": "add_override", "pin": a["pin"], "allow": a["allow"], "note": note}]
+    raise _Rejected(f"no inverse for operation '{op.op}'")
 
 
 def _apply(document: Any, op: Op) -> None:

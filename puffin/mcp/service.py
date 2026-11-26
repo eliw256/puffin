@@ -25,10 +25,16 @@ from puffin.generators.writer import apply_writes, plan_writes
 from puffin.kicad import NetlistError, checkpoint, read_netlist
 from puffin.kicad.changes import build_changes
 from puffin.kicad.export import KiCadCliError, export_netlist
+from puffin.kicad.mapping import map_pin
+from puffin.kicad.netlist import Node
+from puffin.kicad.schematic import SchematicError, read_schematic, symbol_graphics
 from puffin.kicad.state import drift_issues, record_sync, schematic_hash
 from puffin.kicad.writeback import WritebackPlan, lock_file, plan_writeback
 from puffin.library import PartDefinition, PartLoadError
+from puffin.mcp.blocks import block_view
 from puffin.mcp.docs import DocIndex, PathEscape, inside
+from puffin.mcp.symbols import generated_symbol
+from puffin.mcp.targets import issue_target
 
 PUFFIN_API = 1
 HISTORY_PATH = Path(".puffin") / "history.jsonl"
@@ -45,6 +51,23 @@ MCP_CODES: dict[str, Severity] = {
     "stale-proposal": Severity.ERROR,
     "writeback-unavailable": Severity.ERROR,
 }
+
+
+_FAMILY_PREFIXES = (("spi", "spi"), ("i2c", "i2c"), ("uart", "uart"), ("adc", "adc"),
+                    ("usb", "usb"), ("jtag", "usb"), ("gpio", "gpio"))  # fmt: skip
+
+
+def pin_family(assignments: list[dict[str, str]], rail: str | None, is_power: bool) -> str:
+    """What a pin does in this design, for colour coding: its first assignment's peripheral
+    family; otherwise ground/power from its rail; otherwise unused."""
+    if assignments:
+        peripheral = assignments[0]["peripheral"]
+        return next((f for prefix, f in _FAMILY_PREFIXES if peripheral.startswith(prefix)), "gpio")
+    if rail == "gnd":
+        return "ground"
+    if rail or is_power:
+        return "power"
+    return "unused"
 
 
 class ToolError(Exception):
@@ -218,6 +241,7 @@ class PuffinService:
                         if o.pin == endpoint
                     ],
                     "issues": issues_json([i for i in issues if i.where in wheres]),
+                    "family": pin_family(assigned[name], pin.rail, pin.is_power),
                 }
             )
         return {"ok": True, "component": component, "part": part.id, "variant": variant,
@@ -440,6 +464,7 @@ class PuffinService:
         response: dict[str, Any] = {
             "ok": result.ok,
             "proposal_id": None,
+            "base_sha256": base,
             "summary": summary,
             "diff": preview["diff"],
             "introduced_errors": [] if result.ok else issues_json(result.errors),
@@ -560,6 +585,7 @@ class PuffinService:
         return {
             "ok": not introduced,
             "proposal_id": proposal_id,
+            "base_sha256": base,
             "in_sync": not ops and not import_errors,
             "schematics": [changes.to_dict() for changes in change_sets],
             "diff": preview["diff"],
@@ -598,6 +624,7 @@ class PuffinService:
                     "writeback-unavailable", proposal_id, f"{path.name} is open in KiCad",
                     "close it in KiCad, then propose again",
                 )  # fmt: skip
+        undo = project.inverse(proposal.ops)
         if proposal.writeback:
             result = self._apply_with_writeback(project, proposal)
         else:
@@ -610,7 +637,7 @@ class PuffinService:
                 for name in proposal.schematic_hashes:
                     record_sync(self.root, name, project.model)
         self._loaded_sha = sha256(project.dumps())
-        self._append_history(proposal, self._loaded_sha)
+        self._append_history(proposal, self._loaded_sha, undo)
         changed = [self.path.name] if proposal.ops else []
         changed += [plan.schematic for plan in proposal.writeback]
         return {
@@ -650,8 +677,11 @@ class PuffinService:
             raise
         return result
 
-    def _append_history(self, proposal: Proposal, file_hash: str) -> None:
+    def _append_history(
+        self, proposal: Proposal, file_hash: str, undo: list[dict[str, Any]] | None
+    ) -> None:
         entry = {
+            "undo": undo,
             "time": datetime.now(UTC).isoformat(timespec="seconds"),
             "tool": "apply_edit",
             "proposal_id": proposal.proposal_id,
@@ -664,6 +694,111 @@ class PuffinService:
         path.parent.mkdir(exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(entry, sort_keys=True) + "\n")
+
+    # --- history and undo ---------------------------------------------------------------
+
+    def history(self, limit: int = 10) -> dict[str, Any]:
+        """The most recent applied proposals, newest first."""
+        path = self.root / HISTORY_PATH
+        entries: list[dict[str, Any]] = []
+        if path.is_file():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                try:
+                    entries.append(json.loads(line))
+                except ValueError:
+                    continue
+        recent = list(reversed(entries))[: max(1, limit)]
+        return {
+            "ok": True,
+            "entries": [
+                {"time": e.get("time"), "kind": e.get("kind"), "summary": e.get("summary", []),
+                 "proposal_id": e.get("proposal_id"), "can_undo": e.get("undo") is not None}
+                for e in recent
+            ],
+        }  # fmt: skip
+
+    def propose_undo(self, writeback: bool = False) -> dict[str, Any]:
+        """Propose the inverse of the most recent applied proposal, as a normal proposal."""
+        path = self.root / HISTORY_PATH
+        lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+        if not lines:
+            raise ToolError("not-found", "history", "nothing to undo", "apply an edit first")
+        entry = json.loads(lines[-1])
+        if entry.get("undo") is None:
+            raise ToolError(
+                "not-found", "history", "the last change was recorded before undo support",
+                "make the inverse change by hand",
+            )  # fmt: skip
+        result = self.propose_edit(entry["undo"], writeback=writeback)
+        result["undo_of"] = {"proposal_id": entry.get("proposal_id"),
+                             "summary": entry.get("summary", [])}  # fmt: skip
+        result["changed_since"] = sha256(self.project().dumps()) != entry.get("sha256")
+        return result
+
+    # --- views for the UI ---------------------------------------------------------------
+
+    def fingerprint(self) -> dict[str, Any]:
+        """Hashes of every file a proposal depends on; the UI compares them for staleness."""
+        project = self.project()
+        return {
+            "ok": True,
+            "project": sha256(project.dumps()),
+            "schematics": {
+                name: schematic_hash(self.root, name) for name in schematics(project.model)
+            },
+        }
+
+    def symbol_view(self, component: str) -> dict[str, Any]:
+        """The component as drawable primitives, from its KiCad symbol when the schematic has
+        it (the same geometry write-back uses), else a generated two-sided box."""
+        project, part = self._component(component)
+        board = project.model.boards.get(project.model.components[component].board)
+        schematic = board.kicad_schematic if board else None
+        view: dict[str, Any] | None = None
+        source = "generated"
+        if schematic and (self.root / schematic).is_file():
+            try:
+                sch = read_schematic((self.root / schematic).read_text(encoding="utf-8"))
+                if component in sch.instances:
+                    view = symbol_graphics(sch, component)
+                    source = "schematic"
+            except SchematicError:
+                view = None
+        if view is None:
+            view = generated_symbol(component, part)
+        pin_by_number = {}
+        for pin in view["pins"]:
+            name = map_pin(part, Node(component, pin["number"], pin["name"] or None, None))
+            if name:
+                pin_by_number[pin["number"]] = name
+        return {"ok": True, "component": component, "part": part.id, "source": source,
+                "symbol": view, "pin_by_number": pin_by_number}  # fmt: skip
+
+    def block_view(self) -> dict[str, Any]:
+        project = self.project()
+        return block_view(project.model, project.library)
+
+    def diagnostics(self) -> dict[str, Any]:
+        """check() plus, per issue, what it points at (pin, net, component, ...)."""
+        result = self.check()
+        model = self.project().model
+        result["targets"] = [issue_target(model, issue["where"]) for issue in result["issues"]]
+        return result
+
+    def writeback_status(self) -> dict[str, Any]:
+        pending = checkpoint.read(self.root)
+        return {"ok": True, "pending": pending.pending if pending else 0,
+                "files": sorted(pending.files) if pending else []}  # fmt: skip
+
+    def writeback_confirm(self) -> dict[str, Any]:
+        """The engineer accepts every pending write-back (never exposed over MCP)."""
+        return {"ok": True, "confirmed": checkpoint.confirm(self.root)}
+
+    def writeback_restore(self) -> dict[str, Any]:
+        """Undo every pending write-back (never exposed over MCP)."""
+        restored = checkpoint.restore(self.root)
+        self._project = None  # puffin.yaml may have changed underneath us
+        return {"ok": True, "restored": restored}
 
     # --- generate -----------------------------------------------------------------------
 
