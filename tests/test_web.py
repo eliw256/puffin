@@ -235,3 +235,10 @@ def test_families_are_visible_on_the_background() -> None:
     background = 116 * luminance(dither()["colors"]["dark"]) ** (1 / 3) - 16
     for family, swatch in dither()["families"].items():
         assert lightness(swatch) - background >= 12, family
+
+
+def test_family_swatches_are_final() -> None:
+    data = dither()
+    assert data["families_status"].startswith("final")
+    assert data["families"]["gpio"] == {"a": "blue", "b": "bone", "pattern": "bayer50"}
+    assert data["families"]["spi"] == {"a": "cream", "b": "dark", "pattern": "vlines"}

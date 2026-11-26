@@ -132,7 +132,7 @@
       ]
     }
   },
-  "families_status": "chosen 2026-11-25: every family has its own pattern geometry, so families stay distinguishable in greyscale by shape; lightness separates them further except GPIO (checker) and SPI (v-lines), which are close in lightness by choice",
+  "families_status": "final (approved 2026-11-25). Every family has its own pattern geometry; GPIO (checker) and SPI (v-lines) are close in lightness by choice and differ by shape. Changing a family needs a new review.",
   "families": {
     "ground": {
       "a": "dark",
