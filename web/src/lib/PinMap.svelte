@@ -437,6 +437,7 @@
       {@const isSelected = info !== undefined && info.pin === selected && !drag}
       {@const isTarget = info !== undefined && drag?.target === info.pin}
       {@const hasError = info?.issues.some((i) => i.severity === "error") ?? false}
+      {@const hasWarning = !hasError && (info?.issues.some((i) => i.severity === "warning") ?? false)}
       {@const grab = info !== undefined && draggable.includes(info.pin)}
       <g class="pin" class:illegal={status === "illegal"} data-pin={info?.pin} data-status={status}>
         {#if isSelected}
@@ -473,12 +474,22 @@
 
         {#if row.tag && info}
           <g class="tag">
-            <rect class="tag-bg" class:error={hasError} x={row.tagBox.x} y={row.tagBox.y} width={row.tagBox.w} height={TAG_H} rx="3" />
+            <rect class="tag-bg" class:error={hasError} class:warning={hasWarning} x={row.tagBox.x} y={row.tagBox.y} width={row.tagBox.w} height={TAG_H} rx="3" />
             {#if swatch}
               <rect x={strip(row)} y={row.tagBox.y + 1} width={STRIP} height={TAG_H - 2} fill="url(#{patternId(info.family)})" />
             {/if}
             <text class="tag-text" x={textX(row)} y={row.tagBox.y + 13} text-anchor="middle">{row.tag}</text>
           </g>
+        {/if}
+        {#if hasError || hasWarning}
+          <!-- errors and warnings always carry a glyph as well as the outline (spec §7) -->
+          <text
+            class="state-glyph"
+            class:error={hasError}
+            x={row.tag ? (row.dir[0] < 0 ? row.tagBox.x : row.tagBox.x + row.tagBox.w) : row.p[0]}
+            y={row.tagBox.y - 3}
+            text-anchor="middle">{hasError ? "✕" : "!"}</text
+          >
         {/if}
         {#if flagged}
           <g class="flag" aria-label="flagged: {info?.flags.join(', ')}">
@@ -622,6 +633,19 @@
   .tag-bg.error {
     stroke: var(--error);
     stroke-width: 2;
+  }
+  .tag-bg.warning {
+    stroke: var(--warning);
+    stroke-width: 2;
+  }
+  .state-glyph {
+    fill: var(--warning);
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: none;
+  }
+  .state-glyph.error {
+    fill: var(--error-text);
   }
   .tag-text {
     fill: var(--cream);

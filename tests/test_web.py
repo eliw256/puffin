@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import re
 import shutil
 import subprocess
@@ -128,7 +129,7 @@ def test_symbol_graphics_matches_placed_pins() -> None:
     assert view["skipped"] == []
 
 
-# --- dither swatches (spec §7: §7 colours and ordered mixes only) ---------------------------
+# --- dither swatches (spec §7) ---------------------------------------------------------------
 
 DITHER = WEB / "src" / "lib" / "dither.json"
 
@@ -139,43 +140,93 @@ def dither() -> dict:  # type: ignore[type-arg]
     return json.loads(DITHER.read_text())  # type: ignore[no-any-return]
 
 
-def test_dither_colours_are_the_spec_palette_minus_red_and_orange() -> None:
+def mask_share(pattern: str) -> float:
+    return sum(row.count("1") for row in dither()["patterns"][pattern]["mask"]) / 16
+
+
+def linear(hex_color: str) -> list[float]:
+    channels = [int(hex_color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    return [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+
+
+def oklab_chroma(rgb: list[float]) -> float:
+    r, g, b = rgb
+    l_ = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m_ = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s_ = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    bb = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return float((a * a + bb * bb) ** 0.5)
+
+
+def colour(name: str) -> str:
+    data = dither()
+    return str({**data["colors"], **data["warm"]}[name])
+
+
+def lightness(swatch: dict) -> float:  # type: ignore[type-arg]
+    s = 0.0 if swatch["b"] is None else mask_share(swatch["pattern"])
+    y = luminance(colour(swatch["a"])) * (1 - s) + (
+        luminance(colour(swatch["b"])) * s if swatch["b"] else 0
+    )
+    return float(116 * y ** (1 / 3) - 16 if y > 216 / 24389 else 24389 / 27 * y)
+
+
+def test_dither_colours_cover_the_spec_palette_exactly() -> None:
     spec = (Path(__file__).parents[1] / "PUFFIN_SPEC.md").read_text().split("## 7.", 1)[1]
     spec_hex = {h.lower() for h in re.findall(r"`(#[0-9A-Fa-f]{6})`", spec.split("Rules:", 1)[0])}
-    colors = {v.lower() for v in dither()["colors"].values()}
-    reserved = {v.lower() for v in dither()["reserved"].values()}
-    assert colors <= spec_hex
-    assert reserved == {"#e72b00", "#ec8f00"}
-    assert not colors & reserved
-    assert colors == spec_hex - reserved
-
-
-def test_bayer_matrix_is_a_4x4_ordered_threshold_map() -> None:
-    matrix = dither()["bayer4"]
-    assert sorted(v for row in matrix for v in row) == list(range(16))
-    assert matrix[0][0] == 0 and matrix[1][1] == 4  # the standard recursive Bayer layout
-
-
-def test_family_swatches_use_only_palette_colours_and_allowed_ratios() -> None:
     data = dither()
+    used = {v.lower() for group in ("colors", "dark_aliases", "warm") for v in data[group].values()}
+    assert used == spec_hex
+    assert {v.lower() for v in data["warm"].values()} == {"#e72b00", "#ec8f00"}
+
+
+def test_bayer_masks_follow_the_bayer_matrix() -> None:
+    data = dither()
+    matrix = data["bayer4"]
+    assert sorted(v for row in matrix for v in row) == list(range(16))
+    for name, ratio in (("bayer25", 0.25), ("bayer50", 0.5), ("bayer75", 0.75)):
+        expected = [
+            "".join("1" if matrix[y][x] < ratio * 16 else "0" for x in range(4)) for y in range(4)
+        ]
+        assert data["patterns"][name]["mask"] == expected, name
+
+
+def test_no_family_swatch_is_solid_red_or_orange_or_too_warm() -> None:
+    """Spec §7: warm only as a dithered mix, share <= 50%, with dark/blue/bone, muted."""
+    data = dither()
+    warm, rules = set(data["warm"]), data["warm_rules"]
     for family, swatch in data["families"].items():
-        assert swatch["a"] in data["colors"], family
-        if swatch["b"] is None:
-            assert swatch["ratio"] == 0, family
-        else:
-            assert swatch["b"] in data["colors"] and swatch["b"] != swatch["a"], family
-            assert swatch["ratio"] in data["ratios"], family
+        a, b, pattern = swatch["a"], swatch["b"], swatch["pattern"]
+        assert a not in warm, f"{family}: warm colour as the base (solid share) is not allowed"
+        if b is None:
+            assert pattern == "solid"
+            continue
+        assert b in data["colors"] or b in warm, family
+        if b in warm:
+            assert mask_share(pattern) <= rules["max_share"], f"{family}: warm share over 50%"
+            assert a in rules["partners"], f"{family}: warm must mix with dark, blue or bone"
+            s = mask_share(pattern)
+            mix = [
+                x * (1 - s) + y * s
+                for x, y in zip(linear(colour(a)), linear(colour(b)), strict=True)
+            ]
+            ratio = oklab_chroma(mix) / oklab_chroma(linear(colour(b)))
+            assert ratio <= rules["max_chroma_ratio"], f"{family}: reads near-solid ({ratio:.2f})"
 
 
-def test_every_family_has_a_distinct_pattern() -> None:
-    def key(s: dict) -> tuple:  # type: ignore[type-arg]
-        if s["b"] is None:
-            return (s["a"],)
-        pair = sorted([(s["a"], 1 - s["ratio"]), (s["b"], s["ratio"])])
-        return tuple(pair)
+def test_every_family_has_a_distinct_pattern_and_greyscale_value() -> None:
+    families = dither()["families"]
+    assert set(families) == {"gpio", "spi", "i2c", "uart", "adc", "usb", "power", "ground"}
+    keys = [(s["a"], s["b"], s["pattern"]) for s in families.values()]
+    assert len(set(keys)) == len(keys)
+    patterns = [s["pattern"] for s in families.values()]
+    assert len(set(patterns)) == len(patterns), "each family gets its own pattern geometry"
+    levels = sorted(lightness(s) for s in families.values())
+    assert min(b - a for a, b in itertools.pairwise(levels)) >= 5.5  # sheet shows ~6 L*
 
-    keys = [key(s) for s in dither()["families"].values()]
-    assert len(keys) == len(set(keys))
-    assert set(dither()["families"]) == {
-        "gpio", "spi", "i2c", "uart", "adc", "usb", "power", "ground",
-    }  # fmt: skip
+
+def test_families_are_visible_on_the_background() -> None:
+    background = 116 * luminance(dither()["colors"]["dark"]) ** (1 / 3) - 16
+    for family, swatch in dither()["families"].items():
+        assert lightness(swatch) - background >= 12, family

@@ -1,211 +1,279 @@
 <script lang="ts">
-  // Swatch sheet (M4 step 2 feedback): every §7 solid and every 2-colour ordered-dither mix at
-  // 25/50/75 %, on the real background, at 1x and 2x, with a greyscale preview.
+  // Swatch sheet: the proposed 8 family swatches at pin-map size, a "does the error still pop?"
+  // check, and every allowed candidate (colour pair x pattern), with greyscale and L*.
   import DitherCanvas from "../lib/DitherCanvas.svelte";
   import {
-    candidates,
-    COLORS,
+    candidateGroups,
     FAMILY_SWATCH,
     lightness,
+    PATTERNS,
+    patternLabel,
     sameSwatch,
     swatchLabel,
+    warmChromaRatio,
+    warmShare,
+    type PatternName,
     type Swatch,
   } from "../lib/dither";
   import { FAMILY_LABEL } from "../lib/families";
+  import MockPin from "./MockPin.svelte";
 
   const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
-  const all = candidates();
-  const solids = all.filter((c) => c.swatch.b === null);
-  const mixes = all.filter((c) => c.swatch.b !== null);
-  const pairs = [...new Set(mixes.map((m) => `${m.swatch.a}+${m.swatch.b}`))];
+  const groups = candidateGroups();
+  const all = groups.flatMap((g) => g.items);
+  const idOf = (s: Swatch) => all.find((c) => sameSwatch(c.swatch, s))?.id ?? "?";
+  const patternCols = PATTERNS.filter((p) => p !== "solid");
 
-  function idOf(swatch: Swatch): string {
-    return all.find((c) => sameSwatch(c.swatch, swatch))?.id ?? "?";
+  type FamilyKey = keyof typeof FAMILY_SWATCH;
+  const EXAMPLE: Record<FamilyKey, { tag: string; net: string; name: string }> = {
+    gpio: { tag: "gpio io.boot_button", net: "BOOT_MAIN", name: "IO0" },
+    spi: { tag: "spi2 sck", net: "IMU_SCK", name: "IO12" },
+    i2c: { tag: "i2c0 sda", net: "IMU_SDA", name: "IO8" },
+    uart: { tag: "uart1 tx", net: "LINK_MAIN_TX", name: "IO17" },
+    adc: { tag: "adc1 ch3", net: "VBAT_SENSE", name: "IO4" },
+    usb: { tag: "usb d+", net: "USB_DP", name: "IO20" },
+    power: { tag: "3V3", net: "+3V3", name: "3V3" },
+    ground: { tag: "GND", net: "GND", name: "GND" },
+  };
+
+  const families = (Object.entries(FAMILY_SWATCH) as [FamilyKey, Swatch][])
+    .map(([family, swatch]) => ({ family, swatch, l: lightness(swatch) }))
+    .sort((x, y) => x.l - y.l);
+  const minGap = Math.min(...families.slice(1).map((f, i) => f.l - families[i].l));
+  const gap = (i: number) => {
+    const near = [families[i - 1], families[i + 1]].filter(Boolean).map((f) => Math.abs(f.l - families[i].l));
+    return Math.min(...near);
+  };
+
+  // A row of real pins with one warning-state and one error-state pin mixed in.
+  const popRows: { family: FamilyKey | null; state: "ok" | "warning" | "error" }[] = [
+    { family: "gpio", state: "ok" },
+    { family: "uart", state: "ok" },
+    { family: "spi", state: "warning" },
+    { family: "usb", state: "ok" },
+    { family: "i2c", state: "ok" },
+    { family: "uart", state: "error" },
+    { family: "adc", state: "ok" },
+    { family: "spi", state: "ok" },
+    { family: "power", state: "ok" },
+    { family: "ground", state: "ok" },
+    { family: null, state: "ok" },
+  ];
+
+  function find(group: { items: { id: string; swatch: Swatch }[] }, pattern: PatternName) {
+    return group.items.find((c) => c.swatch.pattern === pattern);
   }
-  const assigned = Object.entries(FAMILY_SWATCH).map(([family, swatch]) => ({
-    family: family as keyof typeof FAMILY_SWATCH,
-    swatch,
-    id: idOf(swatch),
-  }));
-  const usedBy = (id: string) => assigned.filter((a) => a.id === id).map((a) => FAMILY_LABEL[a.family]);
+  const used = (s: Swatch) =>
+    families.filter((f) => sameSwatch(f.swatch, s)).map((f) => FAMILY_LABEL[f.family]);
 </script>
-
-{#snippet card(id: string, swatch: Swatch)}
-  {@const used = usedBy(id)}
-  <figure class="card" class:used={used.length > 0}>
-    <figcaption>
-      <strong class="mono">{id}</strong>
-      <span>{swatchLabel(swatch)}</span>
-      <span class="l mono">L* {lightness(swatch).toFixed(0)}</span>
-    </figcaption>
-    <div class="row">
-      <div><DitherCanvas {swatch} width={64} height={40} cell={1} label="{id} at 1x" /><small>1x</small></div>
-      <div><DitherCanvas {swatch} width={64} height={40} cell={2} label="{id} at 2x" /><small>2x</small></div>
-      <div><DitherCanvas {swatch} width={64} height={40} cell={2} grey label="{id} greyscale" /><small>grey</small></div>
-    </div>
-    <div class="context" aria-hidden="true">
-      <span class="stub"><DitherCanvas {swatch} width={48} height={6} cell={1} /></span>
-      <span class="tag"><DitherCanvas {swatch} width={8} height={18} cell={1} /><span class="mono">spi2 sck</span></span>
-    </div>
-    {#if used.length}<p class="used-by">provisional: {used.join(", ")}</p>{/if}
-  </figure>
-{/snippet}
 
 <main>
   <header>
     <h1>Swatch sheet</h1>
     <p>
-      Every §7 colour usable for pin families (red and orange are reserved for errors and warnings),
-      and every two-colour <strong>ordered (Bayer 4×4)</strong> mix at 25, 50 and 75 %. All on the
-      real background, drawn in whole device pixels and snapped to the pixel grid: 1x is one CSS
-      pixel per dither cell ({dpr} device pixel{dpr === 1 ? "" : "s"} on this display), 2x is two.
-      “grey” shows the same swatch by luminance only. L* is the perceived lightness of the mix as
-      the eye averages it. Text never sits on a swatch: in the UI a family shows as a dithered pin
-      stub and a strip at the end of a solid tag, as in the small preview under each swatch.
+      Family swatches are a base colour, a mask colour and a 4×4 pattern. Solids: the §7 palette,
+      with bg and surface as one “dark”. <strong>Red and orange appear only inside a dithered mix</strong>,
+      at most 50 %, with dark, blue or bone; solid red/orange means error/warning, always with a glyph
+      and outline. Everything is drawn in whole device pixels on the real background
+      ({dpr} device px per CSS px here). L* is the lightness of the mix as the eye averages it; the
+      greyscale previews use the same luminance.
     </p>
-    <p>Pick one id per family; the current picks below are provisional.</p>
-    <table>
-      <thead><tr><th>Family</th><th>Provisional</th><th>Swatch</th><th>L*</th></tr></thead>
+  </header>
+
+  <section>
+    <h2>Proposed families, at pin-map size</h2>
+    <p class="note">
+      Every family has a different pattern geometry, and lightness at least {minGap.toFixed(1)} L* from
+      its neighbour, so they stay apart in greyscale. Red is held to 25 % so an error's solid red
+      outline stays the strongest red on the map.
+    </p>
+    <table class="families">
+      <thead>
+        <tr><th>Family</th><th>Swatch</th><th>id</th><th>L*</th><th>gap</th><th>warm share / chroma</th><th>1x</th><th>2x</th><th>greyscale 1x</th></tr>
+      </thead>
       <tbody>
-        {#each assigned as a (a.family)}
+        {#each families as f, i (f.family)}
+          {@const ex = EXAMPLE[f.family]}
           <tr>
-            <td>{FAMILY_LABEL[a.family]}</td>
-            <td class="mono">{a.id}</td>
-            <td><span class="inline"><DitherCanvas swatch={a.swatch} width={40} height={14} cell={1} />
-              <DitherCanvas swatch={a.swatch} width={40} height={14} cell={1} grey /></span></td>
-            <td class="mono">{lightness(a.swatch).toFixed(0)}</td>
+            <td>{FAMILY_LABEL[f.family]}</td>
+            <td class="small">{swatchLabel(f.swatch)}</td>
+            <td class="mono">{idOf(f.swatch)}</td>
+            <td class="mono">{f.l.toFixed(1)}</td>
+            <td class="mono">{gap(i).toFixed(1)}</td>
+            <td class="mono">{warmShare(f.swatch) ? `${Math.round(warmShare(f.swatch) * 100)}% / ${Math.round(warmChromaRatio(f.swatch) * 100)}%` : "—"}</td>
+            <td><MockPin swatch={f.swatch} tag={ex.tag} net={ex.net} name={ex.name} /></td>
+            <td><MockPin swatch={f.swatch} tag={ex.tag} net={ex.net} name={ex.name} scale={2} /></td>
+            <td class="grey"><MockPin swatch={f.swatch} tag={ex.tag} net={ex.net} name={ex.name} grey /></td>
           </tr>
         {/each}
       </tbody>
     </table>
-  </header>
+  </section>
 
   <section>
-    <h2>Solids</h2>
-    <div class="grid">
-      {#each solids as s (s.id)}{@render card(s.id, s.swatch)}{/each}
+    <h2>Does the error still pop?</h2>
+    <p class="note">
+      Real pins with the proposed swatches, one warning (orange outline, “!”) and one error (red
+      outline, “✕”) mixed in. The error pin is a UART pin, whose swatch carries orange, on purpose.
+    </p>
+    <div class="pop">
+      {#each [1, 2] as scale (scale)}
+        <figure>
+          <figcaption>{scale}x</figcaption>
+          {#each popRows as row, i (i)}
+            {@const ex = row.family ? EXAMPLE[row.family] : { tag: "", net: "", name: "IO21" }}
+            <MockPin swatch={row.family ? FAMILY_SWATCH[row.family] : null} tag={ex.tag} net={ex.net}
+              name={ex.name} state={row.state} {scale} />
+          {/each}
+        </figure>
+      {/each}
+      <figure class="grey">
+        <figcaption>greyscale 1x</figcaption>
+        {#each popRows as row, i (i)}
+          {@const ex = row.family ? EXAMPLE[row.family] : { tag: "", net: "", name: "IO21" }}
+          <MockPin swatch={row.family ? FAMILY_SWATCH[row.family] : null} tag={ex.tag} net={ex.net}
+            name={ex.name} state={row.state} grey />
+        {/each}
+      </figure>
     </div>
   </section>
 
-  {#each pairs as pair (pair)}
-    <section>
-      <h2>{pair.replace("+", " + ")} <span class="hex mono">{COLORS[pair.split("+")[0] as keyof typeof COLORS]} · {COLORS[pair.split("+")[1] as keyof typeof COLORS]}</span></h2>
-      <div class="grid">
-        {#each mixes.filter((m) => `${m.swatch.a}+${m.swatch.b}` === pair) as m (m.id)}{@render card(m.id, m.swatch)}{/each}
-      </div>
-    </section>
-  {/each}
+  <section>
+    <h2>All allowed candidates</h2>
+    <p class="note">
+      Rows are colour pairs (base + mask colour), columns are patterns. Each cell: the swatch at the
+      pin map's dither cell size, its greyscale, id and L*. A dash in a warm row means the mix is
+      not allowed: over 50 % warm, or its averaged colour keeps more than half the chroma of solid
+      red/orange, so it would read as near-solid.
+      Cream-framed cells are the proposed families.
+    </p>
+    <table class="grid">
+      <thead>
+        <tr><th>pair</th>{#each patternCols as p (p)}<th>{patternLabel(p)}</th>{/each}</tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>solids</th>
+          <td colspan={patternCols.length}>
+            <div class="solids">
+              {#each groups[0].items as c (c.id)}
+                <div class="cell" class:used={used(c.swatch).length}>
+                  <DitherCanvas swatch={c.swatch} width={40} height={20} cell={2} />
+                  <DitherCanvas swatch={c.swatch} width={40} height={8} cell={2} grey />
+                  <span class="mono">{c.id} · {c.swatch.a}</span>
+                  <span class="mono l">L* {lightness(c.swatch).toFixed(0)}</span>
+                </div>
+              {/each}
+            </div>
+          </td>
+        </tr>
+        {#each groups.slice(1) as group (group.pair)}
+          <tr>
+            <th class="mono">{group.pair}</th>
+            {#each patternCols as p (p)}
+              {@const c = find(group, p)}
+              <td>
+                {#if c}
+                  <div class="cell" class:used={used(c.swatch).length} title={swatchLabel(c.swatch)}>
+                    <DitherCanvas swatch={c.swatch} width={40} height={20} cell={2} />
+                    <DitherCanvas swatch={c.swatch} width={40} height={8} cell={2} grey />
+                    <span class="mono">{c.id}</span>
+                    <span class="mono l">L* {lightness(c.swatch).toFixed(0)}</span>
+                  </div>
+                {:else}
+                  <span class="na" title="not allowed: warm share over 50%, or reads too close to solid red/orange">—</span>
+                {/if}
+              </td>
+            {/each}
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </section>
 </main>
 
 <style>
   main {
     padding: 24px 32px 64px;
-    max-width: 1200px;
   }
   h1 {
     margin: 0 0 8px;
     font-size: 22px;
   }
-  header p {
+  h2 {
+    font-size: 16px;
+    margin: 32px 0 6px;
+  }
+  header p,
+  .note {
     color: var(--bone);
-    max-width: 78ch;
+    max-width: 90ch;
+    margin: 0 0 12px;
   }
   table {
     border-collapse: collapse;
-    margin: 12px 0 8px;
-    font-size: 13px;
+    font-size: 12.5px;
   }
   th,
   td {
     text-align: left;
-    padding: 4px 14px 4px 0;
+    padding: 6px 12px 6px 0;
     border-bottom: 1px solid var(--line);
     color: var(--bone);
+    vertical-align: middle;
   }
   th {
     color: var(--muted);
     font-weight: 400;
   }
-  .inline {
-    display: inline-flex;
-    gap: 6px;
-  }
-  h2 {
-    font-size: 15px;
-    margin: 28px 0 10px;
-  }
-  .hex {
-    color: var(--muted);
-    font-weight: 400;
+  .small {
     font-size: 12px;
-    margin-left: 8px;
+    max-width: 150px;
   }
-  .grid {
+  .grey {
+    filter: grayscale(1);
+  }
+  .pop {
     display: flex;
+    gap: 40px;
+    align-items: flex-start;
     flex-wrap: wrap;
-    gap: 16px;
   }
-  .card {
+  .pop figure {
     margin: 0;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    width: 252px;
-  }
-  .card.used {
-    border-color: var(--cream);
   }
   figcaption {
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
-    font-size: 12.5px;
-    color: var(--bone);
-    margin-bottom: 8px;
-  }
-  figcaption strong {
-    color: var(--cream);
-  }
-  .l {
-    margin-left: auto;
     color: var(--muted);
-  }
-  .row {
-    display: flex;
-    gap: 12px;
-  }
-  .row small {
-    display: block;
-    color: var(--muted);
-    font-size: 11px;
-    margin-top: 2px;
-  }
-  .context {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-top: 10px;
-  }
-  .stub {
-    display: inline-flex;
-  }
-  .tag {
-    display: inline-flex;
-    align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--bone);
-    border-radius: 3px;
-    overflow: hidden;
-    height: 20px;
-  }
-  .tag .mono {
-    padding: 0 8px;
-    font-size: 11px;
-    color: var(--cream);
-  }
-  .used-by {
-    margin: 8px 0 0;
     font-size: 12px;
-    color: var(--cream);
+    margin-bottom: 6px;
+  }
+  .grid td,
+  .grid th {
+    padding: 6px 8px 6px 0;
+  }
+  .grid th {
+    white-space: nowrap;
+  }
+  .cell {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    font-size: 10.5px;
+  }
+  .cell.used {
+    border-color: var(--cream);
+  }
+  .cell .l {
+    color: var(--muted);
+  }
+  .solids {
+    display: flex;
+    gap: 14px;
+  }
+  .na {
+    color: var(--muted);
   }
 </style>
