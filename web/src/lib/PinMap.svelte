@@ -17,6 +17,7 @@
     selected: string | null;
     draggable: string[];
     statuses: Record<string, DropStatus> | null;
+    highlight?: string[]; // pins to outline, e.g. the pins of a bus selected in the block diagram
     drag?: Drag | null;
     onselect: (pin: string) => void;
     ondrop: (source: string, target: string | null) => void;
@@ -29,6 +30,7 @@
     selected,
     draggable,
     statuses,
+    highlight = [],
     drag = $bindable(null),
     onselect,
     ondrop,
@@ -43,8 +45,8 @@
   const HOVER_DELAY = 300; // ms
   const DITHER_CELL = 2; // CSS px per dither cell, rounded to whole device pixels
 
-  let wrap: HTMLDivElement | undefined = $state();
-  let svg: SVGSVGElement | undefined = $state();
+  let wrap = $state<HTMLDivElement | undefined>();
+  let svg = $state<SVGSVGElement | undefined>();
 
   // ---- layout (computed once from the symbol; nothing here changes during interaction) ----
 
@@ -138,7 +140,7 @@
   // ---- view: changes only by explicit zoom or pan ----
 
   let zoom = $state(1);
-  let center: [number, number] | null = $state(null);
+  let center = $state<[number, number] | null>(null);
   const c = $derived(center ?? [bounds.x + bounds.w / 2, bounds.y + bounds.h / 2]);
   const viewBox = $derived.by(() => {
     const w = bounds.w / zoom;
@@ -206,7 +208,7 @@
   // ---- hover tooltip ----
 
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
-  let tooltip: { row: Row } | null = $state(null);
+  let tooltip = $state<{ row: Row } | null>(null);
 
   function hoverStart(row: Row) {
     if (drag || pending || !row.info) return;
@@ -442,6 +444,8 @@
       <g class="pin" class:illegal={status === "illegal"} data-pin={info?.pin} data-status={status}>
         {#if isSelected}
           <rect class="selection" x={box.x} y={box.y} width={box.w} height={box.h} rx="5" />
+        {:else if info && highlight.includes(info.pin) && !drag}
+          <rect class="highlight" x={box.x} y={box.y} width={box.w} height={box.h} rx="5" />
         {/if}
         <rect
           class="hit"
@@ -593,6 +597,12 @@
     stroke: var(--cream);
     stroke-width: 1.5;
     stroke-dasharray: 3 2;
+  }
+  .highlight {
+    fill: none;
+    stroke: var(--cream);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
   }
   .selection {
     fill: var(--blue);

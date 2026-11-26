@@ -15,10 +15,12 @@
   type Scene = "select" | "drag" | "review";
   let scene = $state<Scene>("select");
   // The starting selection comes from the snapshot once; afterwards it is the user's.
-  let selected: string | null = $state(untrack(() => snapshot.selected));
-  let drag: Drag | null = $state(null);
-  let review: { target: string } | null = $state(null);
+  let selected = $state<string | null>(untrack(() => snapshot.selected));
+  let drag = $state<Drag | null>(null);
+  let review = $state<{ target: string } | null>(null);
   let toast: { kind: "refused" | "info"; text: string } | null = $state(null);
+  let verifying = $state(false);
+  let verifyDone = $state(false);
 
   const RECORDED_TARGET = "GPIO4"; // the only move with a recorded proposal in the snapshot
   const legal = $derived(snapshot.legal);
@@ -165,10 +167,17 @@
     <ReviewPanel
       title={title(review.target)}
       proposal={snapshot.proposal}
-      withWriteback={snapshot.proposal_writeback}
+      withWriteback={verifyDone ? snapshot.proposal_writeback : null}
+      verifying={verifying}
       unavailable={review.target === RECORDED_TARGET
         ? ""
         : `Review preview only exists for ${RECORDED_TARGET} in this prototype. ${review.target} is ${STATUS_LABEL[statusMap[review.target] ?? "illegal"]}; the real UI proposes this move and shows its diffs and checks here.`}
+      onchoose={(choice) => {
+        if (choice === "writeback" && !verifyDone) {
+          verifying = true; // stands in for the kicad-cli run
+          setTimeout(() => ((verifying = false), (verifyDone = true)), 900);
+        }
+      }}
       onclose={() => show("select")}
       onapply={(choice) => {
         review = null;

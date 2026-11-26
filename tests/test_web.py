@@ -242,3 +242,48 @@ def test_family_swatches_are_final() -> None:
     assert data["families_status"].startswith("final")
     assert data["families"]["gpio"] == {"a": "blue", "b": "bone", "pattern": "bayer50"}
     assert data["families"]["spi"] == {"a": "cream", "b": "dark", "pattern": "vlines"}
+
+
+# --- committed bundle -----------------------------------------------------------------------
+
+STATIC = Path(__file__).parents[1] / "puffin" / "web" / "static"
+
+
+def source_hash() -> str:
+    """Same algorithm as web/scripts/stamp.mjs."""
+    import hashlib
+
+    inputs = [
+        "index.html",
+        "package-lock.json",
+        "svelte.config.js",
+        "tsconfig.json",
+        "vite.config.ts",
+    ]
+    files = list(inputs)
+    for folder in ("src/app", "src/lib"):
+        files += [p.relative_to(WEB).as_posix() for p in (WEB / folder).rglob("*") if p.is_file()]
+    digest = hashlib.sha256()
+    for name in sorted(files):
+        digest.update(name.encode() + b"\0")
+        digest.update((WEB / name).read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def test_committed_bundle_matches_its_sources() -> None:
+    """Fails when web/ changed without `npm run build` (in web/), so a stale UI never ships."""
+    recorded = (STATIC / "SOURCE_HASH").read_text().strip()
+    assert recorded == source_hash(), "puffin/web/static is stale: run `npm run build` in web/"
+
+
+def test_bundle_is_complete_and_licensed() -> None:
+    index = (STATIC / "index.html").read_text()
+    referenced = re.findall(r'(?:src|href)="/(assets/[^"]+)"', index)
+    assert referenced, index
+    for asset in referenced:
+        assert (STATIC / asset).is_file(), asset
+    assert not re.search(r"data:font", " ".join(p.read_text() for p in STATIC.glob("assets/*.css")))
+    assert "Eclipse Public License" in (STATIC / "ELKJS-LICENSE.md").read_text()
+    attributes = (Path(__file__).parents[1] / ".gitattributes").read_text()
+    assert "puffin/web/static/** linguist-generated=true" in attributes

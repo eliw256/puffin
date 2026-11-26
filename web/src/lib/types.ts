@@ -106,6 +106,7 @@ export type WritebackPlan = {
 export type Proposal = {
   ok: boolean;
   proposal_id: string | null;
+  base_sha256?: string;
   summary: string[];
   diff: string;
   introduced_errors: Issue[];
