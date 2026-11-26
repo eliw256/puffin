@@ -338,7 +338,7 @@
         : [outward, ...corners].reduce((a, c) => (cost(c) < cost(a) ? c : a));  // fmt: skip
     }
     // fixed, in page coordinates, so it can leave the map's clipped box
-    return { info: row.info!, name: row.name, x: origin.left + best.x, y: origin.top + best.y, measured: tipW > 0 };
+    return { info: row.info!, x: origin.left + best.x, y: origin.top + best.y, measured: tipW > 0 };
   });
 
   // ---- pointer: select on down, drag only past a threshold, Escape cancels ----
@@ -637,7 +637,7 @@
   {#if tip && !drag}
     <div class="tooltip" role="tooltip" bind:offsetWidth={tipW} bind:offsetHeight={tipH}
          style="left: {tip.x}px; top: {tip.y}px; visibility: {tip.measured ? 'visible' : 'hidden'}">
-      <div class="tip-head mono"><strong>{tip.info.pin}</strong> · {tip.name} · pin {tip.info.numbers.join(", ")}</div>
+      <div class="tip-head mono"><strong>{tip.info.pin}</strong> · {tip.info.numbers.join(", ")}{tip.info.type ? ` · ${tip.info.type}` : ""}</div>
       <div class="tip-doing">{doing(tip.info)}</div>
       <div class="tip-family">{FAMILY_LABEL[tip.info.family]}{tip.info.flags.length ? ` · ⚑ ${tip.info.flags.join(", ")}` : ""}</div>
       {#if tip.info.description}

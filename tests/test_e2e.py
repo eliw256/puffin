@@ -325,3 +325,34 @@ def test_tooltip_shows_the_pins_own_citation_in_full(page: playwright.Page, ui: 
         assert loc.evaluate("e => e.scrollWidth <= e.clientWidth")  # not ellipsized
         page.mouse.move(2, 2)
         page.locator(".tooltip").wait_for(state="detached")
+
+
+def test_tooltip_header_is_name_number_type(page: playwright.Page, ui: UI) -> None:
+    open_ui(page, ui)
+    hit = page.locator('g[data-pin="EN"] .hit').bounding_box()
+    assert hit
+    page.mouse.move(hit["x"] + hit["width"] / 2, hit["y"] + hit["height"] / 2)
+    head = page.locator(".tooltip .tip-head")
+    head.wait_for(state="visible")
+    assert head.text_content() == "EN · 3 · I"
+
+
+def test_pin_legend_is_hidden_in_the_block_diagram(page: playwright.Page, ui: UI) -> None:
+    open_ui(page, ui)
+    assert page.locator("footer.legend").is_visible()
+    page.get_by_role("button", name="Block diagram").click()
+    page.wait_for_selector(".blocks svg .node")
+    assert page.locator("footer.legend").count() == 0
+    page.get_by_role("button", name="Pin map").click()
+    page.locator("footer.legend").wait_for(state="visible")
+
+
+def test_loading_the_ui_requests_nothing_that_fails(page: playwright.Page, ui: UI) -> None:
+    failed: list[str] = []
+    page.on("response", lambda r: failed.append(f"{r.status} {r.url}") if r.status >= 400 else None)
+    open_ui(page, ui)
+    page.wait_for_timeout(500)  # not "networkidle": the live event stream stays open
+    assert failed == []
+    # browsers fetch /favicon.ico unless the page names an icon; ours is inline
+    href = page.locator('link[rel="icon"]').get_attribute("href")
+    assert href and href.startswith("data:image/svg+xml,")

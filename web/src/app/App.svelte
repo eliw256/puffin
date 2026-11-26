@@ -398,7 +398,7 @@
   {#if fatal}<p class="fatal" role="alert">{fatal}</p>{/if}
 
   <main>
-    <section class="map" aria-label={view === "pins" ? "Pin map" : "Block diagram"}>
+    <section class="map" class:blocks={view === "blocks"} aria-label={view === "pins" ? "Pin map" : "Block diagram"}>
       {#if drift.length}
         <div class="drift" role="alert">
           <span class="glyph" aria-hidden="true">!</span>
@@ -423,6 +423,7 @@
           {/key}
         {/if}
       </div>
+      {#if view === "pins"}<!-- the pin legend means nothing in the block diagram -->
       <footer class="legend" aria-label="Legend">
         {#if statuses && legal}
           <div class="legend-row">
@@ -450,6 +451,7 @@
           </div>
         {/if}
       </footer>
+      {/if}
     </section>
 
     <aside class="side">
@@ -600,6 +602,9 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) 64px;
     min-height: 0;
+  }
+  .map.blocks {
+    grid-template-rows: minmax(0, 1fr);
   }
   .canvas {
     min-height: 0;
