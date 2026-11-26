@@ -13,7 +13,8 @@
     <h2 class="mono">{pin.pin}</h2>
     <span class="sub mono">pin {pin.numbers.join(", ")} · {pin.datasheet_name ?? "—"} · {pin.type ?? "?"}</span>
     <span class="family">
-      {#if familySwatch(pin.family)}<DitherCanvas swatch={familySwatch(pin.family)!} width={16} height={12} cell={2} />{/if}
+      {#if familySwatch(pin.family)}<DitherCanvas swatch={familySwatch(pin.family)!} width={16} height={12} cell={2} />{:else}<span
+          class="line-chip" class:connected={pin.family === "connected"}></span>{/if}
       {FAMILY_LABEL[pin.family]}
     </span>
   </header>
@@ -135,6 +136,15 @@
     padding: 1px 8px 1px 4px;
     border: 1px solid var(--bone);
     border-radius: 4px;
+  }
+  .line-chip {
+    width: 16px;
+    height: 2px;
+    background: var(--pin-idle);
+  }
+  .line-chip.connected {
+    height: 3px;
+    background: var(--bone);
   }
   .desc {
     margin: -4px 0 14px;

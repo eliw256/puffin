@@ -441,7 +441,7 @@
           <div class="legend-row">
             {#each FAMILY_ORDER as family (family)}
               {@const swatch = familySwatch(family)}
-              <span class="swatch">{#if swatch}<DitherCanvas {swatch} width={22} height={12} cell={2} />{:else}<span class="idle-chip"></span>{/if}{FAMILY_LABEL[family]}</span>
+              <span class="swatch">{#if swatch}<DitherCanvas {swatch} width={22} height={12} cell={2} />{:else if family === "connected"}<span class="connected-chip"></span>{:else}<span class="idle-chip"></span>{/if}{FAMILY_LABEL[family]}</span>
             {/each}
           </div>
           <div class="legend-row">
@@ -687,6 +687,11 @@
   }
   .glyph-s {
     color: var(--cream);
+  }
+  .connected-chip {
+    width: 22px;
+    height: 3px;
+    background: var(--bone);
   }
   .idle-chip {
     width: 22px;

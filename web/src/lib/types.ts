@@ -44,7 +44,8 @@ export type Family =
   | "usb"
   | "power"
   | "ground"
-  | "unused";
+  | "connected" // on a net, no assignment (MCU pins)
+  | "unused"; // on no net
 
 export type PinInfo = {
   pin: string;

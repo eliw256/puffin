@@ -15,7 +15,7 @@ export const WARM_PARTNERS = data.warm_rules.partners as Cool[];
 export const MAX_WARM_SHARE = data.warm_rules.max_share;
 export const MAX_CHROMA_RATIO = data.warm_rules.max_chroma_ratio;
 export const PATTERNS = Object.keys(data.patterns) as PatternName[];
-export const FAMILY_SWATCH = data.families as Record<Exclude<Family, "unused">, Swatch>;
+export const FAMILY_SWATCH = data.families as Record<Exclude<Family, "unused" | "connected">, Swatch>;
 
 const MASKS = Object.fromEntries(
   Object.entries(data.patterns).map(([name, p]) => [name, p.mask.map((row) => [...row].map((c) => c === "1"))]),

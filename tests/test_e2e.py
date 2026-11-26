@@ -97,8 +97,9 @@ def open_ui(page: playwright.Page, ui: UI) -> None:
 
 def drag(page: playwright.Page, source: str, target: str) -> None:
     tag = page.locator(f'g[data-pin="{source}"] .tag-bg').bounding_box()
+    kinds = (".idle", ".stub", ".connected")  # how a pin line is drawn, by state
     line = page.locator(
-        f'g[data-pin="{target}"] .idle, g[data-pin="{target}"] .stub'
+        ", ".join(f'g[data-pin="{target}"] {k}' for k in kinds)
     ).first.bounding_box()
     assert tag and line
     x, y = tag["x"] + tag["width"] / 2, tag["y"] + tag["height"] / 2
@@ -214,3 +215,24 @@ def test_block_diagram_loads_elkjs_on_demand(page: playwright.Page, ui: UI) -> N
     page.get_by_role("button", name=SPI_BUS).click()
     page.get_by_role("button", name="Pin map").click()
     playwright.expect(page.locator(".highlight")).to_have_count(4)  # the bus's pins are outlined
+
+
+def test_pin_states_render_assigned_connected_and_unused(page: playwright.Page, ui: UI) -> None:
+    open_ui(page, ui)
+    playwright.expect(page.locator('g[data-pin="GPIO10"]')).to_have_attribute("data-family", "spi")
+    playwright.expect(page.locator('g[data-pin="EN"]')).to_have_attribute(
+        "data-family", "connected"
+    )
+    playwright.expect(page.locator('g[data-pin="EN"] line.connected')).to_have_count(1)
+    playwright.expect(page.locator('g[data-pin="GPIO1"]')).to_have_attribute(
+        "data-family", "unused"
+    )
+    playwright.expect(page.locator('g[data-pin="GPIO1"] line.idle')).to_have_count(1)
+    page.get_by_label("Component").select_option("U3")
+    for pin in ("SCK", "SDI", "SDO", "CS"):
+        playwright.expect(page.locator(f'g[data-pin="{pin}"]')).to_have_attribute(
+            "data-family", "spi"
+        )
+    playwright.expect(page.locator('g[data-pin="SCK"] rect.stub')).to_have_count(1)  # SPI swatch
+    page.locator('g[data-pin="SCK"] .hit').click()
+    playwright.expect(page.locator(".detail .family")).to_contain_text("SPI")

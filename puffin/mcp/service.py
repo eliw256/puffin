@@ -57,17 +57,41 @@ _FAMILY_PREFIXES = (("spi", "spi"), ("i2c", "i2c"), ("uart", "uart"), ("adc", "a
                     ("usb", "usb"), ("jtag", "usb"), ("gpio", "gpio"))  # fmt: skip
 
 
-def pin_family(assignments: list[dict[str, str]], rail: str | None, is_power: bool) -> str:
-    """What a pin does in this design, for colour coding: its first assignment's peripheral
-    family; otherwise ground/power from its rail; otherwise unused."""
+def pin_family(
+    assignments: list[dict[str, str]],
+    rail: str | None,
+    is_power: bool,
+    *,
+    connected: bool,
+    is_mcu: bool,
+    functions: list[str],
+) -> str:
+    """What a pin does in this design, for colour coding.
+
+    - assigned: the first assignment's peripheral family;
+    - power/ground: from the pin's rail;
+    - connected, no assignment: a non-MCU part's pin takes its family from its own functions
+      (an IMU's `spi.sck` is SPI); an MCU pin is `connected` (on a net, no role assigned);
+    - otherwise `unused` (on no net).
+    """
+
+    def by_prefix(name: str) -> str | None:
+        return next((f for prefix, f in _FAMILY_PREFIXES if name.startswith(prefix)), None)
+
     if assignments:
-        peripheral = assignments[0]["peripheral"]
-        return next((f for prefix, f in _FAMILY_PREFIXES if peripheral.startswith(prefix)), "gpio")
+        return by_prefix(assignments[0]["peripheral"]) or "gpio"
     if rail == "gnd":
         return "ground"
     if rail or is_power:
         return "power"
-    return "unused"
+    if not connected:
+        return "unused"
+    if not is_mcu:
+        for function in functions:
+            family = by_prefix(function)
+            if family:
+                return family
+    return "connected"
 
 
 class ToolError(Exception):
@@ -241,7 +265,14 @@ class PuffinService:
                         if o.pin == endpoint
                     ],
                     "issues": issues_json([i for i in issues if i.where in wheres]),
-                    "family": pin_family(assigned[name], pin.rail, pin.is_power),
+                    "family": pin_family(
+                        assigned[name],
+                        pin.rail,
+                        pin.is_power,
+                        connected=endpoint in net_of,
+                        is_mcu=part.kind == "mcu",
+                        functions=pin.functions,
+                    ),
                 }
             )
         return {"ok": True, "component": component, "part": part.id, "variant": variant,

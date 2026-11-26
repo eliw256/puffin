@@ -482,7 +482,7 @@
    "datasheet_name": "EN",
    "description": "High: on, enables the chip. Low: off, the chip powers off. Note: Do not leave the EN pin floating.",
    "description_source": "ESP32-S3-WROOM-1 & WROOM-1U Datasheet v1.8, Table 3-1: Function column, with notes b and c appended verbatim to IO35-37 and IO47-48",
-   "family": "unused",
+   "family": "connected",
    "flags": [],
    "flags_source": {},
    "functions": [
@@ -1492,6 +1492,7 @@
  },
  "project": "robot-mainboard",
  "proposal": {
+  "base_sha256": "c17568ce8908a39f5140666e65e0d009df01cd64762db92a42dd6cbaf4fa2586",
   "diff": "--- puffin.yaml\n+++ puffin.yaml\n@@ -35,7 +35,7 @@\n   IMU_SCK: [U1.GPIO12, U3.SCK]\n   IMU_MOSI: [U1.GPIO11, U3.SDI]\n   IMU_MISO: [U1.GPIO13, U3.SDO]\n-  IMU_CS: [U1.GPIO10, U3.CS]\n+  IMU_CS: [U1.GPIO4, U3.CS]\n   # Inter-MCU link, crossed TX/RX.\n   LINK_MAIN_TX: [U1.GPIO17, U2.GPIO18]\n   LINK_MOTOR_TX: [U2.GPIO17, U1.GPIO18]\n@@ -52,7 +52,7 @@\n       sck: GPIO12\n       mosi: GPIO11\n       miso: GPIO13\n-      cs.imu: GPIO10\n+      cs.imu: GPIO4\n     uart1:\n       tx: GPIO17\n       rx: GPIO18\n",
   "generated": [
    {
@@ -1517,6 +1518,7 @@
   ]
  },
  "proposal_writeback": {
+  "base_sha256": "c17568ce8908a39f5140666e65e0d009df01cd64762db92a42dd6cbaf4fa2586",
   "diff": "--- puffin.yaml\n+++ puffin.yaml\n@@ -35,7 +35,7 @@\n   IMU_SCK: [U1.GPIO12, U3.SCK]\n   IMU_MOSI: [U1.GPIO11, U3.SDI]\n   IMU_MISO: [U1.GPIO13, U3.SDO]\n-  IMU_CS: [U1.GPIO10, U3.CS]\n+  IMU_CS: [U1.GPIO4, U3.CS]\n   # Inter-MCU link, crossed TX/RX.\n   LINK_MAIN_TX: [U1.GPIO17, U2.GPIO18]\n   LINK_MOTOR_TX: [U2.GPIO17, U1.GPIO18]\n@@ -52,7 +52,7 @@\n       sck: GPIO12\n       mosi: GPIO11\n       miso: GPIO13\n-      cs.imu: GPIO10\n+      cs.imu: GPIO4\n     uart1:\n       tx: GPIO17\n       rx: GPIO18\n",
   "generated": [
    {

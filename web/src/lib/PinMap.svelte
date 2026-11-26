@@ -441,7 +441,7 @@
       {@const hasError = info?.issues.some((i) => i.severity === "error") ?? false}
       {@const hasWarning = !hasError && (info?.issues.some((i) => i.severity === "warning") ?? false)}
       {@const grab = info !== undefined && draggable.includes(info.pin)}
-      <g class="pin" class:illegal={status === "illegal"} data-pin={info?.pin} data-status={status}>
+      <g class="pin" class:illegal={status === "illegal"} data-pin={info?.pin} data-family={info?.family ?? "unused"} data-status={status}>
         {#if isSelected}
           <rect class="selection" x={box.x} y={box.y} width={box.w} height={box.h} rx="5" />
         {:else if info && highlight.includes(info.pin) && !drag}
@@ -465,10 +465,12 @@
         {#if swatch && info}
           {@const s = stub(row)}
           <rect class="stub" x={s.x} y={s.y} width={s.w} height={s.h} fill="url(#{patternId(info.family)})" />
+        {:else if info?.family === "connected"}
+          <line class="connected" x1={row.p[0]} y1={row.p[1]} x2={row.b[0]} y2={row.b[1]} />
         {:else}
           <line class="idle" x1={row.p[0]} y1={row.p[1]} x2={row.b[0]} y2={row.b[1]} />
         {/if}
-        <text class="pin-name" class:dim={!swatch} x={ins.x} y={ins.y} text-anchor={ins.anchor}>{row.name}</text>
+        <text class="pin-name" class:dim={!swatch && info?.family !== "connected"} x={ins.x} y={ins.y} text-anchor={ins.anchor}>{row.name}</text>
         <text
           class="pin-number"
           x={(row.p[0] + row.b[0]) / 2 + (row.dir[0] === 0 ? 8 : 0)}
@@ -611,6 +613,7 @@
   }
   .stub,
   .idle,
+  .connected,
   .tag,
   .flag,
   .net,
@@ -621,6 +624,11 @@
   .idle {
     stroke: var(--pin-idle);
     stroke-width: 1.5;
+  }
+  .connected {
+    stroke: var(--bone);
+    stroke-width: 3;
+    stroke-linecap: butt;
   }
   .pin-name {
     fill: var(--cream);

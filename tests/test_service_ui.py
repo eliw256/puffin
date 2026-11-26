@@ -24,7 +24,12 @@ def test_query_pins_reports_each_pins_family(example_path: Path) -> None:
     assert pins["GPIO0"]["family"] == "gpio"
     assert pins["3V3"]["family"] == "power"
     assert pins["GND"]["family"] == "ground"
-    assert pins["EN"]["family"] == "unused"  # on a net, but no assignment
+    assert pins["EN"]["family"] == "connected"  # MCU pin on a net, no assignment
+    assert pins["GPIO1"]["family"] == "unused"  # on no net (no-connect)
+    imu = {p["pin"]: p["family"] for p in PuffinService(example_path).query_pins("U3")["pins"]}
+    # a non-MCU part's connected pins take their family from the part's own functions
+    assert imu == {"SCK": "spi", "SDI": "spi", "SDO": "spi", "CS": "spi", "VDD": "power",
+                   "GND": "ground"}  # fmt: skip
 
 
 def test_symbol_view_uses_the_schematic_symbol(example_path: Path) -> None:

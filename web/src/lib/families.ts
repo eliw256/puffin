@@ -10,7 +10,8 @@ export const FAMILY_LABEL: Record<Family, string> = {
   usb: "USB / JTAG",
   power: "Power",
   ground: "Ground",
-  unused: "Unused",
+  connected: "Connected, no assignment",
+  unused: "Unused (no net)",
 };
 
 export const FAMILY_ORDER: Family[] = [
@@ -22,12 +23,13 @@ export const FAMILY_ORDER: Family[] = [
   "usb",
   "power",
   "ground",
+  "connected",
   "unused",
 ];
 
-/** The family's dither swatch; unused pins have none. */
+/** The family's dither swatch; connected and unused pins have none (they draw a solid line). */
 export function familySwatch(family: Family): Swatch | null {
-  return family === "unused" ? null : FAMILY_SWATCH[family];
+  return family === "unused" || family === "connected" ? null : FAMILY_SWATCH[family];
 }
 
 /** What the pin does in this design, in a few words. */
