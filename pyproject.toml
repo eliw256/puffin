@@ -9,6 +9,8 @@ dependencies = [
     "mcp>=2.3.0,<3",
     "pydantic>=2.7,<3",
     "ruamel.yaml>=0.18,<0.19",
+    "starlette>=1.10,<2",
+    "uvicorn>=0.54,<1",
 ]
 
 [project.scripts]
@@ -44,7 +46,7 @@ select = ["E", "F", "I", "B", "UP", "RUF"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["puffin/core", "puffin/generators", "puffin/kicad", "puffin/mcp"]
+files = ["puffin/core", "puffin/generators", "puffin/kicad", "puffin/mcp", "puffin/web"]
 
 [[tool.mypy.overrides]]
 module = ["ruamel.*"]

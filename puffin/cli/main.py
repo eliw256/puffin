@@ -86,6 +86,13 @@ def cmd_show(project: Project, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ui(project: Project, args: argparse.Namespace) -> int:
+    from puffin.web.server import serve as serve_ui  # imported lazily: only the UI needs it
+
+    serve_ui(project.path, args.port, open_browser=not args.no_browser)
+    return 0
+
+
 def cmd_mcp(project: Project, args: argparse.Namespace) -> int:
     from puffin.mcp.server import serve  # imported lazily: the SDK is only needed here
 
@@ -112,6 +119,12 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_parser(commands)
     importer.add_parser(commands)
     edit.add_parsers(commands)
+
+    ui = commands.add_parser("ui", help="open the local web UI (binds 127.0.0.1 only)")
+    ui.add_argument("path", nargs="?", default=".", help="puffin.yaml or its directory")
+    ui.add_argument("--port", type=int, default=None, help="port on 127.0.0.1 (default: any free)")
+    ui.add_argument("--no-browser", action="store_true", help="print the URL, don't open it")
+    ui.set_defaults(func=cmd_ui)
 
     serve = commands.add_parser("mcp", help="serve the project to an AI model over MCP (stdio)")
     serve.add_argument("path", nargs="?", default=".", help="puffin.yaml or its directory")
