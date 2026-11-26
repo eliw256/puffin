@@ -1,6 +1,6 @@
 # M4: Web UI, design note
 
-Status: approved 2026-11-25, with the resolutions at the end.
+Status: implemented 2026-11-25 (steps 3+); approved design with the resolutions and as-built notes at the end.
 
 Sources: PUFFIN_SPEC.md §6 (M4) and §7 (visual identity), DECISIONS 11.1 (Tauri shell), and the
 M3 and write-back notes.
@@ -316,3 +316,48 @@ throwaway.
     (`npm run swatches`).
 - **Pin descriptions** come from the datasheet, verbatim (`description`,
   `pin_description_source`), and show in the tooltip and the detail panel with their citation.
+
+## Steps 3+ (as built)
+
+- **Run it:** `uv run puffin ui examples/dual-esp32s3-robot`. It binds 127.0.0.1 on a free port,
+  prints the URL (with `#token=…`) and opens the browser. `--port N` and `--no-browser` are
+  available.
+- **One service layer.**
+  - `puffin/web/server.py` maps each `/api/*` route to one `PuffinService` method.
+  - New service methods: `symbol_view`, `block_view`, `diagnostics` (with `issue_target`),
+    `fingerprint`, `history`, `propose_undo` and `writeback_status/confirm/restore`. Confirm
+    and restore are deliberately not exposed over MCP.
+  - Undo inverses are computed by `Project.inverse` at apply time and stored in
+    `history.jsonl`.
+- **The app reuses the prototype's components:** `PinMap`, `PinDetail`, `ReviewPanel`, `Diff`
+  and `DitherCanvas`. `ReviewPanel` now only shows and asks; the app does the API calls. The
+  prototype and swatch pages stay as dev pages on the same components.
+- **Apply also regenerates the headers.** The acceptance flow ends with the header updated, so
+  the UI calls `generate` after a successful `apply_edit` and says so in the review panel. MCP
+  keeps them as separate tools.
+- **Live updates:** an authenticated SSE stream. It snapshots the files before "hello", so an
+  edit right after connecting isn't missed (found by a test).
+- **Stale proposals** are detected from the fingerprint (puffin.yaml, plus the schematic for a
+  write-back proposal) before Apply, and again by the server at apply time. "Propose again"
+  re-runs the same edit.
+- **Block diagram:** ELK runs on the main thread rather than in a web worker. These graphs are
+  tiny, and the ELK chunk only loads when the view first opens, so the pin map never waits for
+  it.
+  - Edges within one board are shifted by that board's position, because ELK reports them
+    relative to their container.
+  - **ELK is EPL-2.0 OR GPL-3.0-or-later,** not MIT. Its licence ships in
+    `puffin/web/static/ELKJS-LICENSE.md`. dagre (MIT) is the fallback if that's unwanted.
+- **Bundle:** `npm run build` (in `web/`) writes `puffin/web/static/` with `SOURCE_HASH`; a
+  test fails on a stale bundle. Fonts are emitted as files (`assetsInlineLimit: 0`) because the
+  CSP allows `font-src 'self'` and no `data:` URIs.
+- **Tests:**
+  - `tests/test_web_api.py`: API parity with the service, and every security item in §i, each
+    checked to fail when its guard is removed.
+  - `tests/test_service_ui.py`: the views, and an inverse round trip for all 14 operations.
+  - `tests/test_e2e.py` (Playwright, Chromium):
+    - drag, review and apply ("Puffin only"), with the header updated;
+    - an illegal drop refused;
+    - an external edit appearing live;
+    - a stale proposal after a concurrent MCP edit, then "Propose again";
+    - **the acceptance round trip:** write-back, confirm, the schematic reverted as a KiCad save
+      would, drift shown live, import from the UI, clean.

@@ -19,6 +19,7 @@ puffin = "puffin.cli.main:main"
 [dependency-groups]
 dev = [
     "mypy>=1.10",
+    "playwright==1.65.0",
     "pytest>=8",
     "ruff>=0.5",
 ]

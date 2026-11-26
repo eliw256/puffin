@@ -4,8 +4,8 @@ Not scheduled. Each item has one line of context. Move an item into a milestone 
 taken on, and mark it done here when it lands.
 
 ## Write-back
-- **Present write-back as a choice, not a warning.** Covered by M4 §e (the review panel's
-  "Puffin only" / "Puffin + schematic" choice); mark done when M4 lands.
+- ~~**Present write-back as a choice, not a warning.**~~ Done in M4: the review panel's
+  required "Puffin only" / "Puffin + schematic" choice.
 - **`writeback: auto` project setting.** Consider after about 20 write-backs with no restore or
   layout fix, as evidence that verified write-back is safe to apply by default.
 - **Auto-confirm, per user, opt-in, off by default.** Confirming needs a human look at the layout

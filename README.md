@@ -7,8 +7,8 @@ ship an AI model. It gives whatever model you bring the project, the docs, and t
 judgment-heavy work, while deterministic code handles sync and every edit goes through the same
 validated API.
 
-Status: milestone M3 (core graph, validation, ESP-IDF pin headers, KiCad import, MCP server).
-The web UI comes in a later milestone.
+Status: milestone M4 (core graph, validation, ESP-IDF pin headers, KiCad import with write-back,
+MCP server, local web UI). The Tauri desktop shell comes next.
 
 ## Install
 
@@ -66,6 +66,20 @@ apply without a prompt, `--netlist FILE` to use a pre-exported netlist, or `--js
 import that ran `kicad-cli`, `.puffin/state.json` records hashes of the schematic and of the
 graph's managed connectivity, so `puffin check` can warn when either side has changed since. A `--netlist` import never updates it, since the file
 may not match the schematic.
+
+## Use it in the browser
+
+```bash
+uv run puffin ui examples/dual-esp32s3-robot
+```
+
+This opens a local UI (127.0.0.1 only, with a per-run access token in the URL).
+- **Pin map:** drawn from your KiCad symbol. Drag an assigned pin to another legal pin, review
+  the YAML, header and schematic diffs, and choose "Puffin only" or "Puffin + schematic"
+  (verified write-back) before applying.
+- **Block diagram and issues:** see the boards and buses, and jump from any issue to its pin.
+- **Live:** confirm or undo write-backs, import KiCad changes when the schematic drifts, and
+  undo the last change. Edits made in KiCad, an editor or by an AI over MCP show up live.
 
 ## Use it from an AI model (MCP)
 
