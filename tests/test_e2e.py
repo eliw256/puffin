@@ -236,3 +236,29 @@ def test_pin_states_render_assigned_connected_and_unused(page: playwright.Page, 
     playwright.expect(page.locator('g[data-pin="SCK"] rect.stub')).to_have_count(1)  # SPI swatch
     page.locator('g[data-pin="SCK"] .hit').click()
     playwright.expect(page.locator(".detail .family")).to_contain_text("SPI")
+
+
+@pytest.mark.parametrize(
+    "pin", ["GPIO10", "GPIO17", "3V3", "GND", "GPIO0"]
+)  # left, right, top, bottom, flagged
+def test_selection_encloses_the_whole_row_with_padding(
+    page: playwright.Page, ui: UI, pin: str
+) -> None:
+    open_ui(page, ui)
+    page.locator(f'g[data-pin="{pin}"] .hit').click()
+    box = page.locator(f'rect.selection[data-for="{pin}"]').bounding_box()
+    assert box
+    parts = page.locator(
+        f'g[data-pin="{pin}"] text, g[data-pin="{pin}"] .tag-bg, g[data-pin="{pin}"] .flag-box'
+    )
+    assert parts.count() >= 3
+    for i in range(parts.count()):
+        part = parts.nth(i).bounding_box()
+        assert part, i
+        margins = {
+            "left": part["x"] - box["x"],
+            "top": part["y"] - box["y"],
+            "right": box["x"] + box["width"] - (part["x"] + part["width"]),
+            "bottom": box["y"] + box["height"] - (part["y"] + part["height"]),
+        }
+        assert min(margins.values()) >= 6, (pin, parts.nth(i).text_content(), margins)

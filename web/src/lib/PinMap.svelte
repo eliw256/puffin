@@ -105,16 +105,50 @@
     return { x: row.b[0], y: row.dir[1] < 0 ? row.b[1] + gap + 8 : row.b[1] - gap, anchor: "middle" };
   }
 
-  function rowBox(row: Row): { x: number; y: number; w: number; h: number } {
+  type Box = { x: number; y: number; w: number; h: number };
+
+  /** Extent of a monospace text run: x/y are the SVG text position, `size` the font size. */
+  function textSpan(x: number, y: number, chars: number, size: number, anchor: "start" | "end" | "middle"): Box {
+    const w = chars * size * 0.62; // mono advance is 0.6em; a little extra for glyph overhang
+    const x0 = anchor === "start" ? x : anchor === "end" ? x - w : x - w / 2;
+    return { x: x0, y: y - size * 1.0, w, h: size * 1.3 }; // the font's full ascent and descent, not just ink
+  }
+
+  function numberPos(row: Row): { x: number; y: number; anchor: "start" | "middle" } {
+    return {
+      x: (row.p[0] + row.b[0]) / 2 + (row.dir[0] === 0 ? 8 : 0),
+      y: (row.p[1] + row.b[1]) / 2 - (row.dir[0] === 0 ? -3 : 6),
+      anchor: row.dir[0] === 0 ? "start" : "middle",
+    };
+  }
+
+  /** Everything that belongs to a pin row: line, name, number, tag, flag box and net label. */
+  function rowExtent(row: Row): Box {
     const ins = inside(row);
-    const xs = [row.p[0], row.b[0], ins.x, row.tagBox.x, row.tagBox.x + row.tagBox.w, row.flagX];
-    const ys = [row.p[1] - 11, row.p[1] + 11];
-    if (row.dir[0] === 0) ys.push(row.tagBox.y, row.tagBox.y + TAG_H, ins.y);
-    if (row.dir[0] < 0) xs.push(ins.x + row.name.length * CHAR);
-    if (row.dir[0] > 0) xs.push(ins.x - row.name.length * CHAR);
-    const x = Math.min(...xs) - 6;
-    const y = Math.min(...ys) - 2;
-    return { x, y, w: Math.max(...xs) - x + 6, h: Math.max(...ys) - y + 2 };
+    const num = numberPos(row);
+    const boxes: Box[] = [
+      { x: Math.min(row.p[0], row.b[0]) - STUB / 2, y: Math.min(row.p[1], row.b[1]) - STUB / 2,
+        w: Math.abs(row.p[0] - row.b[0]) + STUB, h: Math.abs(row.p[1] - row.b[1]) + STUB },
+      textSpan(ins.x, ins.y, row.name.length, 11, ins.anchor),
+      textSpan(num.x, num.y, row.number.length, 9, num.anchor),
+    ];  // fmt: skip
+    if (row.tag) boxes.push({ x: row.tagBox.x, y: row.tagBox.y, w: row.tagBox.w, h: TAG_H });
+    if ((row.info?.flags.length ?? 0) > 0) boxes.push({ x: row.flagX - 6, y: row.p[1] - 6, w: 12, h: 12 });
+    if (row.info?.net) boxes.push(textSpan(row.netX, row.netY, row.info.net.length, 11, row.netAnchor));
+    const x0 = Math.min(...boxes.map((b) => b.x));
+    const y0 = Math.min(...boxes.map((b) => b.y));
+    const x1 = Math.max(...boxes.map((b) => b.x + b.w));
+    const y1 = Math.max(...boxes.map((b) => b.y + b.h));
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+
+  const PAD_PX = 7; // selection padding on screen, at any zoom
+
+  /** The row's selection / hit box: its extent plus PAD_PX screen pixels on every side. */
+  function rowBox(row: Row): Box {
+    const pad = PAD_PX / (align.a || 1);
+    const e = rowExtent(row);
+    return { x: e.x - pad, y: e.y - pad, w: e.w + 2 * pad, h: e.h + 2 * pad };
   }
 
   const bounds = $derived.by(() => {
@@ -127,8 +161,8 @@
       }
     }
     for (const row of rows) {
-      const box = rowBox(row);
-      xs.push(box.x - 140, box.x + box.w + 140); // room for net labels
+      const box = rowExtent(row); // unpadded: the layout must not depend on the zoom
+      xs.push(box.x - 24, box.x + box.w + 24);
       ys.push(box.y, box.y + box.h);
     }
     const pad = 30;
@@ -429,6 +463,15 @@
     {/each}
     <text class="refdes" x={bounds.x + bounds.w / 2} y={bounds.y + 26} text-anchor="middle">{symbol.ref}</text>
 
+    <!-- selection and highlight sit below every pin row, so they never paint over any text -->
+    {#each rows as row (row.number)}
+      {#if row.info && !drag && (row.info.pin === selected || highlight.includes(row.info.pin))}
+        {@const box = rowBox(row)}
+        <rect class={row.info.pin === selected ? "selection" : "highlight"} data-for={row.info.pin}
+              x={box.x} y={box.y} width={box.w} height={box.h} rx="5" />
+      {/if}
+    {/each}
+
     {#each rows as row (row.number)}
       {@const info = row.info}
       {@const status = statusOf(row)}
@@ -436,17 +479,11 @@
       {@const swatch = swatchOf(info)}
       {@const ins = inside(row)}
       {@const box = rowBox(row)}
-      {@const isSelected = info !== undefined && info.pin === selected && !drag}
       {@const isTarget = info !== undefined && drag?.target === info.pin}
       {@const hasError = info?.issues.some((i) => i.severity === "error") ?? false}
       {@const hasWarning = !hasError && (info?.issues.some((i) => i.severity === "warning") ?? false)}
       {@const grab = info !== undefined && draggable.includes(info.pin)}
       <g class="pin" class:illegal={status === "illegal"} data-pin={info?.pin} data-family={info?.family ?? "unused"} data-status={status}>
-        {#if isSelected}
-          <rect class="selection" x={box.x} y={box.y} width={box.w} height={box.h} rx="5" />
-        {:else if info && highlight.includes(info.pin) && !drag}
-          <rect class="highlight" x={box.x} y={box.y} width={box.w} height={box.h} rx="5" />
-        {/if}
         <rect
           class="hit"
           class:grab
@@ -473,9 +510,9 @@
         <text class="pin-name" class:dim={!swatch && info?.family !== "connected"} x={ins.x} y={ins.y} text-anchor={ins.anchor}>{row.name}</text>
         <text
           class="pin-number"
-          x={(row.p[0] + row.b[0]) / 2 + (row.dir[0] === 0 ? 8 : 0)}
-          y={(row.p[1] + row.b[1]) / 2 - (row.dir[0] === 0 ? -3 : 6)}
-          text-anchor={row.dir[0] === 0 ? "start" : "middle"}>{row.number}</text
+          x={numberPos(row).x}
+          y={numberPos(row).y}
+          text-anchor={numberPos(row).anchor}>{row.number}</text
         >
 
         {#if row.tag && info}

@@ -21,6 +21,7 @@ FIXTURE = REPO / "tests" / "fixtures" / "dual-esp32s3-robot"
 OUT = REPO / "web" / "src" / "prototype" / "snapshot.json"
 MOVE = [{"op": "move_pin", "component": "U1", "from_pin": "GPIO10", "to_pin": "GPIO4"}]
 
+
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "project"
